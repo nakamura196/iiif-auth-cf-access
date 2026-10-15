@@ -140,3 +140,63 @@ same-site なので Safari でも送られる。ldas.jp の外のビューアで
 - 2 → 通行証（セッション Cookie）を 8 時間から 1 時間に短くした。Access から外した人は最長 1 時間で見られなくなる。
   切れたら窓が一瞬開いて閉じる（Access 側のログインが残っている間）。
 - テストは 42 件で通過。
+
+## 2026-10-14（続き）R2 をやめ、Workers Static Assets に置く
+
+- `wrangler r2 bucket list` が「R2 を有効にしてください」（code 10042）で失敗した。このアカウントでは R2 が使えない。
+  R2 を有効にするには支払い方法の登録が要るため、無料枠の方針に合わない。
+- 代わりに、ファイルを Worker と一緒に Workers Static Assets として配る。`run_worker_first: true` にすると、
+  すべての要求がまず Worker を通り、ファイルは Worker が `env.ASSETS.fetch` で取り出したときだけ出る。
+  無料プランの上限は 1 ファイル 25 MiB・2 万ファイル。railclass は GLB 100 件（最大 2.9 MB）と
+  ダウンロード 400 件（最大 4.2 MB、計 535 MB）なので収まる。
+- 置き場所を差し替えられるようにした（src/store.ts）。R2 を結べば R2、Static Assets を結べばそちらを使う。
+  Range は Static Assets が応じなければ Worker 側で切り出す。
+- 手元の `wrangler dev` で確かめた（acela.glb、2,294,332 バイト）:
+  ファイルの素のパス → 404、署名なしの /files → 403、正しい署名 → 200 で全バイト、Range 0-99 → 206 で 100 バイト。
+- 代償: ファイルを差し替えるたびに Worker を配り直す。ファイルの数だけ配布の時間が延びる。
+- 鍵が無い・32 文字未満のときは 500 を返すようにした。配布の途中で鍵が未設定のまま動くと、
+  空の鍵で署名が通ってしまうため。配布は `--secrets-file` で鍵とコードを同時に出す（scripts/deploy.zsh）。
+- テストは 47 件で通過。
+- 置き場所の別案として、mdx の S3 互換ストレージ（s3ds.mdx.jp）も挙がった。Worker から S3 の署名付きで読む形になる。
+  本人の判断で採らず、Workers Static Assets のままにした（2026-10-14）。
+
+## 2026-10-14（続き）トークンと Access を作った
+
+- トークンはダッシュボードでしか作れない（CLI の親鍵を持たない方針）。画面を埋める console スクリプトを用意したが、
+  画面の部品がまた変わっていて（base-ui）、「レベル」の欄の代わりに「権限」の欄の開閉ボタンを掴んで止まった。
+  - 権限の欄は `input[role=combobox]`、リソースとレベルは `button[role=combobox]`。開閉ボタンも `aria-haspopup=listbox` を名乗る。
+  - 「ゾーン リソース」の隠し入力 `zoneResources` は無くなっていた。見出し h2 の 2 段上が区画。
+  - 「Access: Organizations, Identity Providers, and Groups」は画面では「Access: Organizations」と「Access: Identity Providers」に分かれていた。権限は計 6 行。
+  - アカウント リソースの既定は「すべてのアカウント」。自分のアカウントに絞った。
+- 結局、Claude in Chrome でその場の DOM を読みながら埋め、「トークンを作成する」だけ本人が押した。
+  画面の作りが変わるたびに console スクリプトを直すより、この方が手戻りが少ない。
+- 作成直後の画面でコピーすると、試すための curl の行が丸ごと入ることがある。保存スクリプトは Bearer の後ろだけを取るようにした。
+- zsh では `status` が読み取り専用の変数。スクリプトで使うと止まる。
+- 保存前の実測（6 項目）はすべて通った。Zone Read を付けていないのに `zones?name=` でゾーン ID が引けた（Workers Routes の権限で足りるらしい）。
+- Access は API で作った（scripts/setup-access.zsh）。対象は `/auth/login/railclass` だけ、ログイン方法は one-time PIN だけ。許可は 1 アドレスから始めた。
+
+## 2026-10-14（続き）2段下のサブドメインには証明書が出なかった
+
+- `models.railclass.ldas.jp` に custom domain を割り当てて配った。DNS は 1.1.1.1 で引けた（104.26.x / 172.67.x）。
+- しかし HTTPS は接続の始めで断られた（`sslv3 alert handshake failure`）。配ってから 15 分以上たっても変わらなかった。
+- 無料の証明書（Universal SSL）が守るのは `ldas.jp` と `*.ldas.jp` だけで、`*.railclass.ldas.jp` は入らない。2段下を使うには有料の証明書が要る。
+- 無料枠の中で使う方針なので、ホスト名を1段の `railclass-models.ldas.jp` に替える案に進む。
+- 汎用の手順としての教訓: Worker の custom domain は、ゾーンの直下の1段（`<名前>.<ゾーン>`）にする。
+- ホスト名を `railclass-models.ldas.jp` に替えて配り直した（Version 6e3e62bf）。ファイルは前回分が使われ、送り直しは 0 件だった。
+- 確認 4 つはすべて期待どおり: probe は 401、署名なしの file は 403、素のパスは 404、login は Access のログイン画面への 302。
+- Access アプリは新しいホスト名で作り直し、aud を差し替えた。古いアプリは API で消した。古い custom domain は、配り直しのときに wrangler が外していた。
+- ブラウザで `/auth/login/railclass` を開くと、Access のログイン画面（one-time PIN）に移ることを確かめた。
+- 本人のアドレスで one-time PIN のログインを通したあと、`https://railclass.ldas.jp` のページから一連の流れを確かめた（Chrome で実行）。
+  - トークンの iframe は `AuthAccessToken2` を postMessage で返した（有効 300 秒）。
+  - そのトークンで probe を聞くと status 302 と、署名付きの /files の URL が返った。
+  - その URL に Range（先頭 4 バイト）で頼むと 206 で、中身は `glTF` で始まった。別のオリジンからの読み出しも CORS で通った。
+
+## 2026-10-15 サイトを切り替えた
+
+- サイト（静的、GitHub Pages）は、3D を直接読むのをやめた。ページを開くと隠した iframe で通行証を聞き、probe で署名付き URL をもらって表示する。通行証が無ければ、サムネイルの上に「ログイン」のボタンを出す。
+- ログインの窓は、クリックからすぐ開かないとポップアップとして止められる。ダウンロードのリンクは、ページを開いた時点でログインの有無を調べておき、押したらすぐ窓を開くようにした。
+- 手元（localhost）では token の iframe が何も返さない（許可したオリジンではないため）。案内が出るまで時間切れの 10 秒を待つ。本番では「ログインしていない」がすぐ返る。
+- マニフェストの rights は In Copyright（rightsstatements.org）に替え、requiredStatement に「個別の許諾が必要」と書いた。RDF の schema:license も同じ。schema:contentUrl は Worker の /files の URL にした（それだけでは 403）。
+- 公開側から GLB 100 個を外し、GitHub のリリース（400 ファイル）を消した。git の履歴は書き換えていない。
+- 落とし穴: ファイルが 400 個あるリリースは、`gh release delete` が GitHub の 502 で何度も失敗した。ファイルを 1 つずつ消してから、リリースを消すと通った。
+- 本番で、ログインした状態の形式ページに 3D が出ることを Chrome で確かめた。

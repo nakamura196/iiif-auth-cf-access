@@ -1,0 +1,42 @@
+{
+  // Real deployment for RailClass (https://railclass.ldas.jp).
+  // Deploy with scripts/deploy.zsh (it passes --assets <dir> with the protected files).
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "railclass-models",
+  "main": "../src/index.ts",
+  "compatibility_date": "2026-08-20",
+  "account_id": "7efcf816ee8a11cebbfcc7115bbca3d5",
+
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "railclass-models.ldas.jp", "custom_domain": true }],
+
+  // Files are deployed with the Worker as static assets laid out as "<collection>/<path>".
+  // run_worker_first: true sends every request to the Worker, so no file is ever served
+  // without a valid signature.
+  "assets": {
+    "directory": "../assets",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none",
+    "not_found_handling": "none"
+  },
+
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "https://nakamura196.cloudflareaccess.com",
+    "COLLECTIONS": {
+      "railclass": {
+        "aud": "c70d65f1fd66f98262bfbace276826b7615c767647600ab0feaf28eb17da0f18",
+        "allowedOrigins": ["https://railclass.ldas.jp"],
+        "label": { "en": ["Log in to RailClass"], "ja": ["RailClass にログイン"] },
+        "heading": { "en": ["Please log in"], "ja": ["ログインしてください"] },
+        "note": {
+          "en": ["These 3D models are available only to approved users. Log in with your registered email address."],
+          "ja": ["この3Dモデルは許可された方のみ利用できます。登録済みのメールアドレスでログインしてください。"]
+        },
+        "confirmLabel": { "en": ["Log in"], "ja": ["ログイン"] },
+        "cookieMaxAge": 3600
+      }
+    }
+  }
+}

@@ -7,3 +7,4 @@ node_modules/
 *.pem
 *.key
 .DS_Store
+assets/

@@ -2,7 +2,7 @@
 
 A Cloudflare Worker that connects [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
 to the [IIIF Authorization Flow API 2.0](https://iiif.io/api/auth/2.0/).
-Access decides who may log in. The Worker speaks IIIF Auth 2.0 to the viewer and serves files from a private R2 bucket.
+Access decides who may log in. The Worker speaks IIIF Auth 2.0 to the viewer and serves files from a private R2 bucket or from Workers Static Assets.
 
 - No runtime dependencies. JWT verification and HMAC use WebCrypto only.
 - No database. Session cookies, access tokens and file URLs are self-contained HMAC-signed values.
@@ -41,7 +41,7 @@ Signed values are `base64url(JSON) "." base64url(HMAC-SHA256)`. The payload has 
 `c` (collection), `sub` (email) and `exp`. A token is never accepted as a session, a session never as a token,
 and neither across collections. The token is a different string from the cookie, as the spec requires.
 
-R2 object keys are `<collection>/<path>`, for example `railclass/icet_411.glb` or `railclass/downloads/icet_411.stl`.
+File keys are `<collection>/<path>`, for example `railclass/icet_411.glb` or `railclass/downloads/icet_411.stl`.
 
 ## Configuration
 
@@ -51,8 +51,9 @@ R2 object keys are `<collection>/<path>`, for example `railclass/icet_411.glb` o
 |---|---|---|
 | `ACCESS_TEAM_DOMAIN` | var | `https://<team>.cloudflareaccess.com`, no trailing slash. JWKS is read from `/cdn-cgi/access/certs` (cached 10 minutes). |
 | `COLLECTIONS` | var (object) | One entry per collection (below). |
-| `SIGNING_KEY` | secret | HMAC key. |
-| `FILES` | R2 binding | Private bucket. |
+| `SIGNING_KEY` | secret | HMAC key, at least 32 characters (the Worker answers 500 otherwise). |
+| `FILES` | R2 binding | Private bucket. Use this or `ASSETS`. |
+| `ASSETS` | static assets binding | Files deployed with the Worker. Needs `run_worker_first: true`. |
 
 Collection entry: `aud` (Access application AUD tag), `allowedOrigins` (viewer origins), `label`, `heading`, `note`,
 `confirmLabel` (IIIF language maps), optional `logoutLabel`, `cookieMaxAge` (seconds).
@@ -70,7 +71,12 @@ Locally there is no Access in front, so `/auth/login/<c>` returns 403 unless you
 
 ## Cloudflare setup
 
-1. Create a private R2 bucket and upload files under `<collection>/<path>`. Put its name in `r2_buckets`.
+1. Choose where the files live.
+   - **Workers Static Assets** (no R2 needed, free plan): files are uploaded with each deploy.
+     Limits: 25 MiB per file, 20,000 files. `run_worker_first: true` is required, otherwise the files would be
+     served to anyone. See `deploy/railclass.jsonc` and `scripts/deploy.zsh`.
+   - **R2**: create a private bucket, upload files under `<collection>/<path>`, put its name in `r2_buckets`.
+     R2 has to be enabled on the account first.
 2. Zero Trust: add a self-hosted Access application.
    - Hostname: your Worker's host (for example `models.railclass.ldas.jp`), path `/auth/login/<collection>`.
    - Policy: Allow, include an email list (one-time PIN is enough).
