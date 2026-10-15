@@ -1,0 +1,24 @@
+{
+  "name": "iiif-auth-cf-access",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bridge Cloudflare Access to the IIIF Authorization Flow API 2.0 (Cloudflare Worker)",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.22.0",
+    "@cloudflare/workers-types": "5.20260930.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "wrangler": "4.143.0"
+  },
+  "overrides": {
+    "undici": "7.30.0",
+    "sharp": "0.35.5"
+  }
+}

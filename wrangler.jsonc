@@ -1,0 +1,43 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "iiif-auth-cf-access",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-20",
+
+  // Access must not be bypassable: no *.workers.dev route, no preview URLs.
+  "workers_dev": false,
+  "preview_urls": false,
+
+  // Custom domain (uncomment and adapt before `wrangler deploy`):
+  // "routes": [{ "pattern": "models.railclass.ldas.jp", "custom_domain": true }],
+
+  "r2_buckets": [
+    // Object keys are "<collection>/<path>", e.g. "railclass/icet_411.glb".
+    { "binding": "FILES", "bucket_name": "iiif-auth-files" }
+  ],
+
+  "vars": {
+    // Your Zero Trust team domain (no trailing slash).
+    "ACCESS_TEAM_DOMAIN": "https://example.cloudflareaccess.com",
+
+    // One entry per collection. "aud" is the AUD tag of the Access application
+    // that guards /auth/login/<collection>.
+    "COLLECTIONS": {
+      "railclass": {
+        "aud": "REPLACE_WITH_ACCESS_APPLICATION_AUD_TAG",
+        "allowedOrigins": ["https://railclass.ldas.jp"],
+        "label": { "en": ["Log in to RailClass"], "ja": ["RailClass にログイン"] },
+        "heading": { "en": ["Please log in"], "ja": ["ログインしてください"] },
+        "note": {
+          "en": ["These 3D models are available only to approved users. Log in with your registered email address."],
+          "ja": ["この3Dモデルは許可された方のみ利用できます。登録済みのメールアドレスでログインしてください。"]
+        },
+        "confirmLabel": { "en": ["Log in"], "ja": ["ログイン"] },
+        "cookieMaxAge": 3600
+      }
+    }
+  }
+
+  // Secret (never in this file):
+  //   op read "op://Personal/<item>/signing_key" | npx wrangler secret put SIGNING_KEY
+}

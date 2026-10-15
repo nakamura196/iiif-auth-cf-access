@@ -1,0 +1,5 @@
+# Copy to .dev.vars (git-ignored) for `npm run dev`.
+# Do not put a real key here. Generate one locally, e.g. from 1Password:
+#   SIGNING_KEY=$(op read "op://Personal/<item>/signing_key")
+# The line below is intentionally NOT a usable value.
+SIGNING_KEY=<set-me-from-1password>
