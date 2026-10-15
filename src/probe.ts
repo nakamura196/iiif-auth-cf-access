@@ -2,6 +2,7 @@ import { fileUrlExpiry, validPath } from "./config.ts";
 import { hmacSign, verifyValue } from "./crypto.ts";
 import { encodePath } from "./iiif.ts";
 import { contentInfo } from "./mime.ts";
+import { fileStore } from "./store.ts";
 import type { CollectionConfig, Env } from "./types.ts";
 
 const CONTEXT = "http://iiif.io/api/auth/2/context.json";
@@ -49,7 +50,7 @@ export async function handleProbe(
 
   if (!validPath(segs)) return json({ "@context": CONTEXT, type: "AuthProbeResult2", status: 404 });
   const path = segs.join("/");
-  const head = await env.FILES.head(`${c}/${path}`);
+  const head = await fileStore(env).head(`${c}/${path}`);
   if (!head) return json({ "@context": CONTEXT, type: "AuthProbeResult2", status: 404 });
 
   const exp = fileUrlExpiry(now);

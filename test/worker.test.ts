@@ -14,8 +14,8 @@ let otherKey: TestKey;
 beforeAll(async () => {
   key = await makeKey("kid-1");
   otherKey = await makeKey("kid-2");
-  await env.FILES.put("railclass/test.glb", BYTES);
-  await env.FILES.put("railclass/downloads/test.stl", new Uint8Array([9, 9, 9]));
+  await env.FILES!.put("railclass/test.glb", BYTES);
+  await env.FILES!.put("railclass/downloads/test.stl", new Uint8Array([9, 9, 9]));
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -403,5 +403,15 @@ describe("file URL expiry", () => {
     vi.spyOn(Date, "now").mockReturnValue((t + 840) * 1000); // later, within the 5-minute token
     expect(await get()).toBe(first);
     expect(first).toContain(`exp=${t + 3600}`);
+  });
+});
+
+describe("configuration", () => {
+  it("refuses to run with a missing or short signing key", async () => {
+    const { default: worker } = await import("../src/index.ts");
+    for (const SIGNING_KEY of [undefined, "short"]) {
+      const res = await worker.fetch(new Request(`${BASE}/auth/login/railclass`), { ...env, SIGNING_KEY } as typeof env);
+      expect(res.status).toBe(500);
+    }
   });
 });

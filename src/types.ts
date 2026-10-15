@@ -21,7 +21,10 @@ export interface Env {
   /** JSON object (wrangler var object) or a JSON string. */
   COLLECTIONS: Record<string, CollectionConfig> | string;
   SIGNING_KEY: string;
-  FILES: R2Bucket;
+  /** Private R2 bucket with keys "<collection>/<path>". Use this or ASSETS. */
+  FILES?: R2Bucket;
+  /** Workers Static Assets (run_worker_first: true) laid out as "<collection>/<path>". */
+  ASSETS?: Fetcher;
 }
 
 export type SignedType = "session" | "token";

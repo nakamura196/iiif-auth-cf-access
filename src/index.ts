@@ -6,6 +6,11 @@ import type { Env } from "./types.ts";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    // Refuse to run with a missing or weak key: everything is signed with it.
+    if (typeof env.SIGNING_KEY !== "string" || env.SIGNING_KEY.length < 32) {
+      console.error("SIGNING_KEY is missing or shorter than 32 characters");
+      return new Response("Server not configured", { status: 500, headers: { "Cache-Control": "no-store" } });
+    }
     try {
       return await route(request, env);
     } catch (err) {

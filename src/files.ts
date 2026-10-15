@@ -2,6 +2,7 @@ import { validPath } from "./config.ts";
 import { hmacVerify } from "./crypto.ts";
 import { contentInfo } from "./mime.ts";
 import { fileSignatureInput } from "./probe.ts";
+import { fileStore } from "./store.ts";
 import type { Env } from "./types.ts";
 
 const CORS = {
@@ -57,14 +58,15 @@ export async function handleFiles(
   if (exp <= now) return plain(403, "Expired");
 
   const key = `${c}/${path}`;
-  const head = await env.FILES.head(key);
+  const store = fileStore(env);
+  const head = await store.head(key);
   if (!head) return plain(404, "Not found");
 
   const headers: Record<string, string> = {
     ...CORS,
     "Content-Type": contentInfo(path).format,
     "Accept-Ranges": "bytes",
-    ETag: head.httpEtag,
+    ...(head.etag ? { ETag: head.etag } : {}),
     "Cache-Control": `private, max-age=${exp - now}`,
   };
 
@@ -79,14 +81,14 @@ export async function handleFiles(
     headers["Content-Range"] = `bytes ${start}-${end}/${head.size}`;
     headers["Content-Length"] = String(length);
     if (request.method === "HEAD") return new Response(null, { status: 206, headers });
-    const obj = await env.FILES.get(key, { range: { offset: start, length } });
-    if (!obj || !("body" in obj)) return plain(404, "Not found");
-    return new Response(obj.body, { status: 206, headers });
+    const body = await store.get(key, [start, end]);
+    if (!body) return plain(404, "Not found");
+    return new Response(body, { status: 206, headers });
   }
 
   headers["Content-Length"] = String(head.size);
   if (request.method === "HEAD") return new Response(null, { status: 200, headers });
-  const obj = await env.FILES.get(key);
-  if (!obj) return plain(404, "Not found");
-  return new Response(obj.body, { status: 200, headers });
+  const body = await store.get(key);
+  if (!body) return plain(404, "Not found");
+  return new Response(body, { status: 200, headers });
 }
