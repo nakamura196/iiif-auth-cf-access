@@ -28,6 +28,7 @@ export const env: Env = {
     railclass: base,
     other: { ...base, aud: AUD_OTHER, allowedOrigins: ["https://other.example"] },
     advisory: { ...base, mode: "clickthrough", aud: undefined },
+    graded: { ...base, mode: "clickthrough", aud: undefined, substituteLabel: { en: ["Small greyscale copy"] } },
     noaud: { ...base, aud: undefined },
   },
 };

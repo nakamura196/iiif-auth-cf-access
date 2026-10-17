@@ -2,6 +2,8 @@ import type { CollectionConfig, Env } from "./types.ts";
 
 export const SESSION_COOKIE_PREFIX = "iiifcf_";
 export const TOKEN_LIFETIME = 300;
+/** Id suffix of the public, degraded copy of an image (see CollectionConfig.substituteLabel). */
+export const DEGRADED_SUFFIX = "-degraded";
 /**
  * Signed file URLs expire on the hour, so every probe within the same hour
  * returns the same URL and the browser can reuse its cached copy. A URL is

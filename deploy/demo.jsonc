@@ -39,6 +39,16 @@
           "en": ["No login. The viewer shows a notice; agreeing opens the image (an active access service with a confirm button)."],
           "ja": ["ログインはありません。ビューアに案内が出て、同意すると画像が見えます（active の access service に確認ボタンだけを付けた型）。"]
         }
+      },
+      {
+        "type": "degraded",
+        "collection": "degraded",
+        "image": "hyakki17",
+        "title": { "en": ["See a small greyscale copy first"], "ja": ["まず小さな白黒の版を見せる"] },
+        "description": {
+          "en": ["Before agreeing, the viewer shows a small greyscale copy (the probe answers 401 with a substitute). Agreeing replaces it with the full colour image. Clients that do not read substitute show nothing until you agree."],
+          "ja": ["同意する前は、小さな白黒の版が見えます（probe が 401 と substitute を返す型）。同意すると、カラーの高精細版に替わります。substitute を読まないビューアでは、同意するまで何も出ません。"]
+        }
       }
     ],
     "COLLECTIONS": {
@@ -53,6 +63,20 @@
         },
         "confirmLabel": { "en": ["Agree and view"], "ja": ["同意して表示"] },
         "logoutLabel": { "en": ["Withdraw agreement"], "ja": ["同意を取り消す"] },
+        "cookieMaxAge": 3600
+      },
+      "degraded": {
+        "mode": "clickthrough",
+        "allowedOrigins": ["https://kasane.ldas.jp", "https://tomcrane.github.io", "http://localhost:3838"],
+        "label": { "en": ["Agree to the terms of use"], "ja": ["利用条件に同意する"] },
+        "heading": { "en": ["Full image after agreeing"], "ja": ["同意すると高精細で見られます"] },
+        "note": {
+          "en": ["You are looking at a small greyscale copy. Agree to the terms of use to see the full colour image. The image is in the public domain; the agreement is here only to show how the IIIF Authorization Flow works. Please credit the National Diet Library Digital Collections when you use it."],
+          "ja": ["いま見えているのは、小さな白黒の版です。利用条件に同意すると、カラーの高精細版が見られます。この画像はパブリックドメインです。この確認は、IIIF の認証の動きをお見せするためだけに入れています。使うときは、出典（国立国会図書館デジタルコレクション）を示してください。"]
+        },
+        "confirmLabel": { "en": ["Agree and view"], "ja": ["同意して表示"] },
+        "logoutLabel": { "en": ["Withdraw agreement"], "ja": ["同意を取り消す"] },
+        "substituteLabel": { "en": ["Small greyscale copy"], "ja": ["小さな白黒の版"] },
         "cookieMaxAge": 3600
       },
       "ueno": {

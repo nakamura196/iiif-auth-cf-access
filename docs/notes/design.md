@@ -222,3 +222,27 @@ iiif-auth-demo.ldas.jp を「Auth 2.0 の型を 1 つずつ試せるサイト」
 - Kasane（OpenSeadragon）はタイルを `x,y,w,h/512,/0/default.jpg`（幅だけ）で頼む。`vips dzsave --layout iiif3` は `512,512`（幅・高さ）の名前で書く。level 0 では名前が一致しないと 404 になる。Worker で `w,` を `w,h` に読み替えて直した。高さは vips と同じく「領域 ÷ 2 のべき乗、切り上げ」で出す。329 枚すべてで一致を確かめた。
 - tomcrane の client は、画像サービスの id（`/info.json` なし）を直接読む。Image API 3 は id から info.json への 303 を推奨しているが、無かったので 404 になっていた。303 を返すようにした。
 - 教訓: level 0 のタイルを手で置くときは、クライアントごとの頼み方（`w,` / `w,h`、id の直読み）を実物で確かめる。curl で自分の URL を叩くだけでは見つからない。
+
+## 2026-10-17 2 番目の型（劣化版）と、substitute についての訂正
+
+**訂正:** 上の「tomcrane client の劣化版は `substitute` という古い書き方を読む」は誤り。Auth 2.0 の正式版を読み直した（https://iiif.io/api/auth/2.0/ 、probe の応答の節）。
+
+- 劣化版は、probe が `status: 401` と `substitute`（配列。各要素に `id`・`type`、任意で `label`・`service`）を返す。クライアントは代わりの資料を表示し、そのまま access service（同意・ログイン）へ進む。
+- `location` は 30x のときだけ使える。意味は「代わりにこちらを読め」（署名付き URL など）。クライアントの手順では、表示して終わる。ログインの案内には進まない。
+- つまり `substitute` が正式な書き方で、`location` で劣化版を返すと、高精細版へ進む道が無くなる。
+
+二つのクライアントの実際:
+
+- tomcrane client（ブランチ iiif-auth2、最終更新 2024-03）は `substitute` を 1 つのオブジェクトとして読み、`substitute.id` を info.json として取りに行く。正式版の配列は読めない。401 なので、同意の流れには進む見込み。
+- Kasane は `substitute` を読まない。30x と `location` は「見てよい」と扱い、案内を出さない。劣化版を見せるには Kasane 側の対応が要る（別の PR）。
+
+作ったもの:
+
+- まとまり `degraded`。設定に `substituteLabel` があると、画像 `<id>-degraded` が公開の劣化版になる（info.json に auth の service なし、タイルは Cookie なしで読める）。トークンの無い probe は 401 と、その画像サービスを `substitute` に入れて返す。
+- 画像は「百鬼夜行絵巻」17 コマ目（彩色の妖怪。白黒との差が分かりやすい）。劣化版は長い辺 600 px の白黒（`vips thumbnail` → `vips colourspace b-w`）。このまとまりのファイルは 339 個。
+- 手元（wrangler dev）で確認: probe は 401 と substitute、劣化版のタイルは Cookie なしで 200、高精細のタイルは Cookie なしで 401・同意後 200。既存の `terms` の probe には substitute が付かない。
+- 確かめていないこと: ビューアでの見え方（配備後に Kasane の対応を入れてから）。tomcrane client で劣化版が出ず、同意後に高精細版が出るか。
+
+前回の積み残し（PR #3 の配備後の目視）:
+
+- Kasane・tomcrane client の両方で「同意画面 → 同意 → 画像」が出た。tomcrane（github.io、別サイト）でも出たのは、使った Chrome が第三者 Cookie を止めていなかったため。Safari や、第三者 Cookie を止めた Chrome での失敗はまだ見ていない。
