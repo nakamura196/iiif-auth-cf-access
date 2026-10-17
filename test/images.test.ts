@@ -38,6 +38,12 @@ describe("image service", () => {
     expect(info.service[0]).toMatchObject({ type: "AuthProbeService2", id: `${BASE}/probe/advisory/image/pic/info.json` });
   });
 
+  it("the service id redirects to info.json", async () => {
+    const res = await call("/image/advisory/pic");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("Location")).toBe(`${BASE}/image/advisory/pic/info.json`);
+  });
+
   it("a tile needs the cookie", async () => {
     expect((await call("/image/advisory/pic/0,0,512,512/512,/0/default.jpg")).status).toBe(401);
     const cookie = await agree();

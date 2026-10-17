@@ -102,9 +102,17 @@ export async function handleImage(
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: { ...CORS, "Access-Control-Allow-Methods": "GET, OPTIONS" } });
   }
-  if (!validPath(segs) || segs.length < 2) return plain(404, "Not found");
+  if (!validPath(segs) || segs.length < 1) return plain(404, "Not found");
   const [id, ...rest] = segs;
   const origin = new URL(request.url).origin;
+
+  // The base URI of an image service redirects to its info.json (Image API 3, 2.1).
+  if (rest.length === 0) {
+    return new Response(null, {
+      status: 303,
+      headers: { ...CORS, Location: `${imageServiceId(origin, c, id)}/info.json`, "Cache-Control": "no-store" },
+    });
+  }
 
   if (rest.length === 1 && rest[0] === "info.json") {
     const info = await readJson(env, `${c}/image/${id}/info.json`);
