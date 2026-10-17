@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { BASE, call, env, getToken } from "./helpers.ts";
+import { withHeight } from "../src/images.ts";
 
 const INFO = {
   "@context": "http://iiif.io/api/image/3/context.json",
@@ -44,6 +45,16 @@ describe("image service", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("image/jpeg");
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(TILE);
+  });
+
+  it("a tile asked for as \"w,\" is served from the \"w,h\" file", async () => {
+    await env.FILES!.put("advisory/image/pic/512,0,488,800/244,400/0/default.jpg", TILE);
+    const cookie = await agree();
+    const res = await call("/image/advisory/pic/512,0,488,800/244,/0/default.jpg", { headers: { Cookie: cookie } });
+    expect(res.status).toBe(200);
+    expect(withHeight(["0,0,1024,1024", "512,", "0", "default.jpg"])).toEqual(["0,0,1024,1024", "512,512", "0", "default.jpg"]);
+    expect(withHeight(["8192,0,509,1024", "255,", "0", "default.jpg"])).toEqual(["8192,0,509,1024", "255,512", "0", "default.jpg"]);
+    expect(withHeight(["full", "512,", "0", "default.jpg"])).toBeNull();
   });
 
   it("another collection's cookie does not open the tiles", async () => {

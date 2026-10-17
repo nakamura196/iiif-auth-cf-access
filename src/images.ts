@@ -75,6 +75,22 @@ export function imageService(info: Json, origin: string, c: string, id: string, 
   };
 }
 
+/**
+ * "x,y,w,h/W,/..." -> "x,y,w,h/W,H/..." with H as vips computes it: the tile
+ * is the region shrunk by a power-of-two scale factor, each side rounded up.
+ */
+export function withHeight(rest: string[]): string[] | null {
+  if (rest.length !== 4) return null;
+  const region = rest[0].match(/^\d+,\d+,(\d+),(\d+)$/);
+  const size = rest[1].match(/^(\d+),$/);
+  if (!region || !size) return null;
+  const [rw, rh, w] = [Number(region[1]), Number(region[2]), Number(size[1])];
+  for (let s = 1; s <= 1024; s *= 2) {
+    if (Math.ceil(rw / s) === w) return [rest[0], `${w},${Math.ceil(rh / s)}`, rest[2], rest[3]];
+  }
+  return null;
+}
+
 export async function handleImage(
   request: Request,
   env: Env,
@@ -102,7 +118,13 @@ export async function handleImage(
   if (!verdict || !verdict.ok) return plain(401, "Unauthorized");
 
   const key = `${c}/image/${id}/${rest.join("/")}`;
-  const body = await fileStore(env).get(key);
+  const store = fileStore(env);
+  let body = await store.get(key);
+  if (!body) {
+    // Clients often ask for "w," (e.g. OpenSeadragon); the tiles are stored as "w,h".
+    const alt = withHeight(rest);
+    if (alt) body = await store.get(`${c}/image/${id}/${alt.join("/")}`);
+  }
   if (!body) return plain(404, "Not found");
   return new Response(body, {
     headers: { ...CORS, "Content-Type": contentInfo(key).format, "Cache-Control": "private, max-age=3600" },
