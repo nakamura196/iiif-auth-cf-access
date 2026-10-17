@@ -95,7 +95,7 @@ export async function verifyAccessJwt(
 
   if (typeof claims.iss !== "string" || normalizeTeamDomain(claims.iss) !== team) return null;
   const auds = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
-  if (!auds.includes(aud)) return null;
+  if (!aud || !auds.includes(aud)) return null;
   if (typeof claims.exp !== "number" || claims.exp + CLOCK_SKEW_S <= nowSeconds) return null;
   if (typeof claims.nbf === "number" && claims.nbf - CLOCK_SKEW_S > nowSeconds) return null;
   if (typeof claims.email !== "string" || claims.email === "") return null;

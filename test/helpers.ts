@@ -27,6 +27,8 @@ export const env: Env = {
   COLLECTIONS: {
     railclass: base,
     other: { ...base, aud: AUD_OTHER, allowedOrigins: ["https://other.example"] },
+    advisory: { ...base, mode: "clickthrough", aud: undefined },
+    noaud: { ...base, aud: undefined },
   },
 };
 export const railclass = base;

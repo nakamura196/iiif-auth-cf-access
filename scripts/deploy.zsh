@@ -51,5 +51,5 @@ print -n "  file without signature (expect 403): "
 curl -s -o /dev/null -w '%{http_code}\n' "https://$host/files/$c/$first"
 print -n "  file by its plain path (expect 404): "
 curl -s -o /dev/null -w '%{http_code}\n' "https://$host/$c/$first"
-print -n "  login without Access (expect 302 to cloudflareaccess.com): "
+print -n "  login without Access (expect 302 to cloudflareaccess.com; 200 for clickthrough): "
 curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' "https://$host/auth/login/$c" | cut -c1-80
