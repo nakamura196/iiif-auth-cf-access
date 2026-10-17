@@ -31,6 +31,19 @@ export interface Env {
   FILES?: R2Bucket;
   /** Workers Static Assets (run_worker_first: true) laid out as "<collection>/<path>". */
   ASSETS?: Fetcher;
+  /** Entries of the showcase's top page. Without it, "/" is 404. */
+  DEMOS?: Demo[] | string;
+}
+
+/** One entry of the showcase's top page: an image of a collection. */
+export interface Demo {
+  /** Short name of the pattern, e.g. "clickthrough". */
+  type: string;
+  collection: string;
+  /** Image id under "<collection>/image/". */
+  image: string;
+  title: LanguageMap;
+  description: LanguageMap;
 }
 
 export type SignedType = "session" | "token";

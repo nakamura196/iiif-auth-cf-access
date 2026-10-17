@@ -200,3 +200,17 @@ same-site なので Safari でも送られる。ldas.jp の外のビューアで
 - 公開側から GLB 100 個を外し、GitHub のリリース（400 ファイル）を消した。git の履歴は書き換えていない。
 - 落とし穴: ファイルが 400 個あるリリースは、`gh release delete` が GitHub の 502 で何度も失敗した。ファイルを 1 つずつ消してから、リリースを消すと通った。
 - 本番で、ログインした状態の形式ページに 3D が出ることを Chrome で確かめた。
+
+## 2026-10-17 デモサイトの最初の型（clickthrough の画像）
+
+iiif-auth-demo.ldas.jp を「Auth 2.0 の型を 1 つずつ試せるサイト」にする。最初の型は clickthrough（同意だけ）を画像で。
+
+- 画像は国立国会図書館デジタルコレクション「百鬼夜行絵巻」（pid 2540972、14 コマ目、PDM、8701×6937）。
+  当初は九相図を探した（clickthrough は本来、内容の注意書きに使う型なので）。NDL のデジタル化資料では見つからず、深追いをやめた。同意の文言は「利用条件への同意」にした。
+- タイルは `vips dzsave --layout iiif3 --tile-size 512` で前もって切る。332 ファイル・4.5 MB（1024 px の full を足して 334）。Static Assets の上限 2 万ファイルに対して十分小さい。サイズの名前は IIIF 3 の `w,h`（`512,512`）になる。
+- info.json は誰でも読める。タイルは Cookie で守る。`<img>` はトークンを送れないため。probe は、画像の service なら 200 を返し、`location` を付けない。
+- info.json とマニフェストは、要求のホスト名で `id` と auth の service を埋める。同じファイルが本番でも手元でも使える。
+- 手元の確認（wrangler dev）: 同意前のタイル 401、同意後 200（image/jpeg）、トークン付き probe 200。
+  wrangler dev は custom_domain の route があると、要求の URL を本番のホスト名（http://iiif-auth-demo.ldas.jp）に書き換える。手元で Kasane からは開けない。ブラウザでの確認は配備後。
+- 確かめていないこと: tomcrane client（github.io、別サイト）で、第三者 Cookie の制限によりトークンが取れない、という見込み。
+  tomcrane client の劣化版は `substitute` という古い書き方を読む。Kasane は `location` を読む。2 番目の型（劣化版）では両方の違いが出る。

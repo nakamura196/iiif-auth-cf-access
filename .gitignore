@@ -8,3 +8,4 @@ node_modules/
 *.key
 .DS_Store
 assets/
+build/
