@@ -36,12 +36,21 @@ redirected to an Access login page (which would fail on CORS).
 | `GET /probe/<c>/<path>` (+ `OPTIONS`) | AuthProbeService2 | no | Always HTTP 200. `status` 302 (+`location`), 401 (+`heading`, `note`) or 404. CORS `*`. |
 | `GET/HEAD /files/<c>/<path>?exp=&sig=` | the resource itself | no | HMAC-signed, 5 minutes. Range supported. CORS `*`. |
 | `GET /auth/logout/<c>` | AuthLogoutService2 | no | Clears the cookie and links to `/cdn-cgi/access/logout`. |
+| `GET /image/<c>/<id>/info.json` | IIIF Image API 3 (level 0) | no | Public. `id` and the auth services are filled in for the requesting host. CORS `*`. |
+| `GET /image/<c>/<id>/<tile>` | image tiles | no | Need the cookie `iiifcf_<c>` (tiles are loaded by `<img>`, which cannot send a token). 401 otherwise. |
+| `GET /manifest/<c>/<id>.json` | Presentation 3 | no | One canvas around the image service, from `meta.json`. |
+| `GET /` | | no | Top page listing `DEMOS`. 404 when `DEMOS` is not set. |
+
+For an image service (`/probe/<c>/image/<id>/info.json`) the probe answers `status` 200 without a `location`:
+the client then loads the tiles, which carry the cookie.
 
 Signed values are `base64url(JSON) "." base64url(HMAC-SHA256)`. The payload has `typ` (`session` or `token`),
 `c` (collection), `sub` (email) and `exp`. A token is never accepted as a session, a session never as a token,
 and neither across collections. The token is a different string from the cookie, as the spec requires.
 
 File keys are `<collection>/<path>`, for example `railclass/icet_411.glb` or `railclass/downloads/icet_411.stl`.
+Images are `<collection>/image/<id>/` with `info.json`, `meta.json` and the tiles of `vips dzsave --layout iiif3`;
+`scripts/build-demo-assets.zsh` makes them from `demo/images.json`.
 
 ## Configuration
 
@@ -51,11 +60,12 @@ File keys are `<collection>/<path>`, for example `railclass/icet_411.glb` or `ra
 |---|---|---|
 | `ACCESS_TEAM_DOMAIN` | var | `https://<team>.cloudflareaccess.com`, no trailing slash. JWKS is read from `/cdn-cgi/access/certs` (cached 10 minutes). |
 | `COLLECTIONS` | var (object) | One entry per collection (below). |
+| `DEMOS` | var (array, optional) | Entries of the top page: `type`, `collection`, `image`, `title`, `description`. |
 | `SIGNING_KEY` | secret | HMAC key, at least 32 characters (the Worker answers 500 otherwise). |
 | `FILES` | R2 binding | Private bucket. Use this or `ASSETS`. |
 | `ASSETS` | static assets binding | Files deployed with the Worker. Needs `run_worker_first: true`. |
 
-Collection entry: `aud` (Access application AUD tag), `allowedOrigins` (viewer origins), `label`, `heading`, `note`,
+Collection entry: optional `mode` (`access`, the default, or `clickthrough`: no login, opening the access service is the agreement), `aud` (Access application AUD tag, not used by `clickthrough`), `allowedOrigins` (viewer origins), `label`, `heading`, `note`,
 `confirmLabel` (IIIF language maps), optional `logoutLabel`, `cookieMaxAge` (seconds).
 
 `workers_dev` and `preview_urls` are `false` on purpose: a `*.workers.dev` URL would not be behind Access.

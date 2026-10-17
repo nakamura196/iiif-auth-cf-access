@@ -8,7 +8,7 @@ export function cookieAttrs(maxAge: number): string {
   return `Path=/; Secure; HttpOnly; SameSite=None; Max-Age=${maxAge}`;
 }
 
-function readCookie(request: Request, name: string): string | null {
+export function readCookie(request: Request, name: string): string | null {
   const header = request.headers.get("Cookie");
   if (!header) return null;
   for (const part of header.split(";")) {

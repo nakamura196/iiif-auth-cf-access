@@ -1,8 +1,10 @@
 {
-  // Showcase deployment for Kasane samples (https://kasane.ldas.jp).
+  // Showcase deployment: the IIIF Auth 2.0 demo site (https://iiif-auth-demo.ldas.jp)
+  // and the Kasane samples (https://kasane.ldas.jp). iiif-demo-models.ldas.jp is the
+  // old host name, kept while hongo-campus-iiif's ueno.json still points to it.
   // Collections here use "clickthrough": no login, the user only agrees to a notice
   // (a content advisory, like Wellcome Collection's). The files are not secret.
-  // Deploy with scripts/deploy.zsh (it passes --assets <dir> with the files).
+  // Build the files with scripts/build-demo-assets.zsh, deploy with scripts/deploy.zsh.
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "iiif-demo-models",
   "main": "../src/index.ts",
@@ -11,7 +13,10 @@
 
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [{ "pattern": "iiif-demo-models.ldas.jp", "custom_domain": true }],
+  "routes": [
+    { "pattern": "iiif-auth-demo.ldas.jp", "custom_domain": true },
+    { "pattern": "iiif-demo-models.ldas.jp", "custom_domain": true }
+  ],
 
   "assets": {
     "directory": "../assets",
@@ -24,7 +29,32 @@
   "vars": {
     // Not used by clickthrough collections.
     "ACCESS_TEAM_DOMAIN": "https://nakamura196.cloudflareaccess.com",
+    "DEMOS": [
+      {
+        "type": "clickthrough",
+        "collection": "terms",
+        "image": "hyakki",
+        "title": { "en": ["Agree to the terms"], "ja": ["利用条件に同意する"] },
+        "description": {
+          "en": ["No login. The viewer shows a notice; agreeing opens the image (an active access service with a confirm button)."],
+          "ja": ["ログインはありません。ビューアに案内が出て、同意すると画像が見えます（active の access service に確認ボタンだけを付けた型）。"]
+        }
+      }
+    ],
     "COLLECTIONS": {
+      "terms": {
+        "mode": "clickthrough",
+        "allowedOrigins": ["https://kasane.ldas.jp", "https://tomcrane.github.io", "http://localhost:3838"],
+        "label": { "en": ["Agree to the terms of use"], "ja": ["利用条件に同意する"] },
+        "heading": { "en": ["Terms of use"], "ja": ["利用条件の確認"] },
+        "note": {
+          "en": ["This image is in the public domain. The agreement is here only to show how the IIIF Authorization Flow works. Please credit the National Diet Library Digital Collections when you use it."],
+          "ja": ["この画像はパブリックドメインです。この確認は、IIIF の認証の動きをお見せするためだけに入れています。使うときは、出典（国立国会図書館デジタルコレクション）を示してください。"]
+        },
+        "confirmLabel": { "en": ["Agree and view"], "ja": ["同意して表示"] },
+        "logoutLabel": { "en": ["Withdraw agreement"], "ja": ["同意を取り消す"] },
+        "cookieMaxAge": 3600
+      },
       "ueno": {
         "mode": "clickthrough",
         "allowedOrigins": ["https://kasane.ldas.jp", "http://localhost:3838"],

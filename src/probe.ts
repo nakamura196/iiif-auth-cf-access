@@ -1,6 +1,7 @@
 import { fileUrlExpiry, validPath } from "./config.ts";
 import { hmacSign, verifyValue } from "./crypto.ts";
 import { encodePath } from "./iiif.ts";
+import { isImageProbePath } from "./images.ts";
 import { contentInfo } from "./mime.ts";
 import { fileStore } from "./store.ts";
 import type { CollectionConfig, Env } from "./types.ts";
@@ -52,6 +53,9 @@ export async function handleProbe(
   const path = segs.join("/");
   const head = await fileStore(env).head(`${c}/${path}`);
   if (!head) return json({ "@context": CONTEXT, type: "AuthProbeResult2", status: 404 });
+
+  // An image service: the tiles are read with the session cookie, so there is nothing to hand over.
+  if (isImageProbePath(segs)) return json({ "@context": CONTEXT, type: "AuthProbeResult2", status: 200 });
 
   const exp = fileUrlExpiry(now);
   const sig = await hmacSign(env.SIGNING_KEY, fileSignatureInput(c, path, exp));
