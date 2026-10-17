@@ -27,9 +27,18 @@ export async function handleLogin(
   cfg: CollectionConfig,
   now: number,
 ): Promise<Response> {
+  if (cfg.mode === "clickthrough") {
+    const session = await signValue(env.SIGNING_KEY, { typ: "session", c, sub: "clickthrough", exp: now + cfg.cookieMaxAge });
+    return htmlPage({
+      title: "Agreed",
+      body: "<h1>Thank you / ありがとうございます</h1><p>You can close this window.<br>このウィンドウを閉じてください。</p>",
+      script: "window.close();",
+      headers: { "Set-Cookie": `${SESSION_COOKIE_PREFIX}${c}=${session}; ${cookieAttrs(cfg.cookieMaxAge)}` },
+    });
+  }
   let email: string | null;
   try {
-    email = await verifyAccessJwt(request.headers.get("Cf-Access-Jwt-Assertion"), env.ACCESS_TEAM_DOMAIN, cfg.aud, now);
+    email = await verifyAccessJwt(request.headers.get("Cf-Access-Jwt-Assertion"), env.ACCESS_TEAM_DOMAIN, cfg.aud ?? "", now);
   } catch (err) {
     console.error("access verification unavailable", err instanceof Error ? err.message : String(err));
     return htmlPage({
@@ -62,7 +71,15 @@ export async function handleLogin(
 
 /* ---------- AuthLogoutService2 ---------- */
 
-export function handleLogout(env: Env, c: string, _cfg: CollectionConfig): Response {
+export function handleLogout(env: Env, c: string, cfg: CollectionConfig): Response {
+  const clear = { "Set-Cookie": `${SESSION_COOKIE_PREFIX}${c}=; ${cookieAttrs(0)}` };
+  if (cfg.mode === "clickthrough") {
+    return htmlPage({
+      title: "Reset",
+      body: "<h1>Reset / 取り消しました</h1><p>You will be asked to agree again.<br>次に開くときは、もう一度確認します。</p>",
+      headers: clear,
+    });
+  }
   const team = env.ACCESS_TEAM_DOMAIN.replace(/\/+$/, "");
   return htmlPage({
     title: "Logged out",
@@ -70,7 +87,7 @@ export function handleLogout(env: Env, c: string, _cfg: CollectionConfig): Respo
       "<h1>Logged out / ログアウトしました</h1>" +
       "<p>Access to the protected files has been closed in this browser.<br>このブラウザでの閲覧を終了しました。</p>" +
       `<p><a href="${team}/cdn-cgi/access/logout">Also sign out of Cloudflare Access / Cloudflare Access からもログアウトする</a></p>`,
-    headers: { "Set-Cookie": `${SESSION_COOKIE_PREFIX}${c}=; ${cookieAttrs(0)}` },
+    headers: clear,
   });
 }
 

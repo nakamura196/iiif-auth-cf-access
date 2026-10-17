@@ -1,0 +1,43 @@
+{
+  // Showcase deployment for Kasane samples (https://kasane.ldas.jp).
+  // Collections here use "clickthrough": no login, the user only agrees to a notice
+  // (a content advisory, like Wellcome Collection's). The files are not secret.
+  // Deploy with scripts/deploy.zsh (it passes --assets <dir> with the files).
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "iiif-demo-models",
+  "main": "../src/index.ts",
+  "compatibility_date": "2026-08-20",
+  "account_id": "7efcf816ee8a11cebbfcc7115bbca3d5",
+
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "iiif-demo-models.ldas.jp", "custom_domain": true }],
+
+  "assets": {
+    "directory": "../assets",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none",
+    "not_found_handling": "none"
+  },
+
+  "vars": {
+    // Not used by clickthrough collections.
+    "ACCESS_TEAM_DOMAIN": "https://nakamura196.cloudflareaccess.com",
+    "COLLECTIONS": {
+      "ueno": {
+        "mode": "clickthrough",
+        "allowedOrigins": ["https://kasane.ldas.jp", "http://localhost:3838"],
+        "label": { "en": ["View the Ueno 3D models"], "ja": ["上野の 3D モデルを見る"] },
+        "heading": { "en": ["Before you view"], "ja": ["ご覧になる前に"] },
+        "note": {
+          "en": ["These 3D models of Ueno are a sample built from PLATEAU building data and point clouds. Shapes and heights may differ from the real buildings. This notice is here to show how the IIIF Authorization Flow works."],
+          "ja": ["この上野の 3D モデルは、PLATEAU の建物データと点群から作った見本です。建物の形や高さは、実際と異なる場合があります。この確認は、IIIF の認証（同意画面）の動きをお見せするために入れています。"]
+        },
+        "confirmLabel": { "en": ["Agree and view"], "ja": ["同意して表示"] },
+        "logoutLabel": { "en": ["Withdraw agreement"], "ja": ["同意を取り消す"] },
+        "cookieMaxAge": 86400
+      }
+    }
+  }
+}

@@ -415,3 +415,51 @@ describe("configuration", () => {
     }
   });
 });
+
+describe("clickthrough", () => {
+  it("login sets the session cookie without any Access JWT", async () => {
+    const spy = mockJwks([key]);
+    const res = await call("/auth/login/advisory");
+    expect(res.status).toBe(200);
+    expect(spy).not.toHaveBeenCalled();
+    expect(res.headers.get("Set-Cookie")).toMatch(/^iiifcf_advisory=[\w-]+\.[\w-]+; Path=\/; /);
+    expect(await res.text()).toContain("window.close()");
+  });
+
+  it("no cookie: missingAspect, so the viewer shows the prompt first", async () => {
+    const res = await call(`/auth/token/advisory?messageId=m1&origin=${encodeURIComponent(ORIGIN)}`);
+    expect((await postedMessage(res))!.message.profile).toBe("missingAspect");
+  });
+
+  it("after agreeing: token, then probe 302 with a location", async () => {
+    await env.FILES!.put("advisory/m.glb", BYTES);
+    const res = await call("/auth/login/advisory");
+    const cookie = (res.headers.get("Set-Cookie") ?? "").split(";")[0];
+    const token = await getToken(cookie, "advisory");
+    const probe = await call("/probe/advisory/m.glb", { headers: { Authorization: `Bearer ${token}` } });
+    const body = (await probe.json()) as { status: number; location?: { id: string } };
+    expect(body.status).toBe(302);
+    expect(body.location!.id).toContain("/files/advisory/m.glb?");
+  });
+
+  it("the cookie is not accepted by another collection", async () => {
+    const res = await call("/auth/login/advisory");
+    const value = (res.headers.get("Set-Cookie") ?? "").split(";")[0].split("=")[1];
+    const t = await call(`/auth/token/railclass?messageId=m1&origin=${encodeURIComponent(ORIGIN)}`, {
+      headers: { Cookie: `iiifcf_railclass=${value}` },
+    });
+    expect((await postedMessage(t))!.message.profile).toBe("invalidAspect");
+  });
+
+  it("logout clears the cookie without an Access link", async () => {
+    const res = await call("/auth/logout/advisory");
+    expect(res.headers.get("Set-Cookie")).toBe("iiifcf_advisory=; Path=/; Secure; HttpOnly; SameSite=None; Max-Age=0");
+    expect(await res.text()).not.toContain("cdn-cgi/access/logout");
+  });
+
+  it("an access collection without an aud refuses every JWT", async () => {
+    mockJwks([key]);
+    const jwt = await signJwt(key, goodClaims({ aud: [""] }));
+    expect((await call("/auth/login/noaud", { headers: { "Cf-Access-Jwt-Assertion": jwt } })).status).toBe(403);
+  });
+});

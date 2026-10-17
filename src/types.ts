@@ -2,8 +2,14 @@
 export type LanguageMap = Record<string, string[]>;
 
 export interface CollectionConfig {
-  /** AUD tag of the Cloudflare Access application guarding /auth/login/<c>. */
-  aud: string;
+  /**
+   * "access" (default): /auth/login/<c> is guarded by Cloudflare Access and needs its JWT.
+   * "clickthrough": no login at all. Opening /auth/login/<c> is the user's agreement
+   * (a content advisory); it sets the session cookie straight away.
+   */
+  mode?: "access" | "clickthrough";
+  /** AUD tag of the Cloudflare Access application guarding /auth/login/<c>. Unused for "clickthrough". */
+  aud?: string;
   /** Origins of the IIIF clients allowed to use the token service. */
   allowedOrigins: string[];
   label: LanguageMap;

@@ -22,6 +22,9 @@
 #   zsh scripts/store-token.zsh --clip     # クリップボードから（作成直後の画面でコピーしてから）
 #   zsh scripts/store-token.zsh            # 非表示入力（read -s）
 #   zsh scripts/store-token.zsh --title "Cloudflare API Token 別名" --zone example.jp --account <ID>
+#   zsh scripts/store-token.zsh --clip --no-access --title "Cloudflare API Token iiif-demo-models" --notes "用途: ..."
+#     --no-access: Access を使わない配備（同意だけの clickthrough）。Access の 3 つの検査を省き、
+#                  権限は Workers Scripts: Edit と Workers Routes: Edit (ldas.jp) の 2 つでよい
 #
 # 何をするか:
 #   1. トークンを受け取る（画面にもシェル履歴にも出さない）
@@ -46,12 +49,15 @@ NOTES="用途: railclass の 3D を守る Worker と Access | 使用先: nakamur
 API="https://api.cloudflare.com/client/v4"
 
 USE_CLIP=0
+NO_ACCESS=0
 while (( $# > 0 )); do
   case "$1" in
     --clip) USE_CLIP=1; shift ;;
     --title) TITLE="$2"; shift 2 ;;
     --zone) ZONE_NAME="$2"; shift 2 ;;
     --account) ACC="$2"; shift 2 ;;
+    --notes) NOTES="$2"; shift 2 ;;
+    --no-access) NO_ACCESS=1; shift ;;
     *) print -u2 "ERROR: 知らない引数です: $1"; exit 1 ;;
   esac
 done
@@ -123,9 +129,11 @@ check() {
 }
 
 check "Workers のスクリプト一覧を引ける"        "$API/accounts/$ACC/workers/scripts"
-check "Access のアプリ一覧を引ける"             "$API/accounts/$ACC/access/apps"
-check "Access の組織を読める"                   "$API/accounts/$ACC/access/organizations"
-check "ログイン方法 (identity providers) を読める" "$API/accounts/$ACC/access/identity_providers"
+if (( ! NO_ACCESS )); then
+  check "Access のアプリ一覧を引ける"             "$API/accounts/$ACC/access/apps"
+  check "Access の組織を読める"                   "$API/accounts/$ACC/access/organizations"
+  check "ログイン方法 (identity providers) を読める" "$API/accounts/$ACC/access/identity_providers"
+fi
 check "Workers の独自ドメイン一覧を引ける"      "$API/accounts/$ACC/workers/domains"
 
 # ゾーンの検査。ゾーン ID を引けないときは「省略」（Zone: Read を付けていないため普通のこと）
