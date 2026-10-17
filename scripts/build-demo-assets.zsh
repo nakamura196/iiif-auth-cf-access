@@ -2,14 +2,14 @@
 # Build the Static Assets directory of the showcase (deploy/demo.jsonc).
 #
 # Usage:
-#   zsh scripts/build-demo-assets.zsh <out-dir> [<collection>=<dir> ...]
-# Example:
-#   zsh scripts/build-demo-assets.zsh build/demo ueno=~/git/minecraft/hongo-campus-iiif
+#   zsh scripts/build-demo-assets.zsh <out-dir> ['<collection>=<file pattern>' ...]
+# Example (quote the pattern; it is expanded here):
+#   zsh scripts/build-demo-assets.zsh build/demo 'ueno=~/git/minecraft/hongo-campus-iiif/*ueno*.glb'
 #
 # - Each image in demo/images.json is downloaded and cut into IIIF Image API 3
 #   level 0 tiles (vips dzsave), with one 1024 px "full" size, into
 #   <out-dir>/<collection>/image/<id>/ together with its meta.json.
-# - <collection>=<dir> copies the .glb files of <dir> into <out-dir>/<collection>/.
+# - <collection>=<file pattern> copies the matching files into <out-dir>/<collection>/.
 # Needs vips and jq. <out-dir> is emptied first.
 set -euo pipefail
 
@@ -46,11 +46,12 @@ for (( i = 0; i < n; i++ )); do
 done
 
 for pair in "$@"; do
-  c=${pair%%=*} from=${~pair#*=}
-  [[ -d $from ]] || { print -u2 "no dir: $from"; exit 1; }
+  c=${pair%%=*} pattern=${pair#*=}
+  files=( ${~pattern}(N.) )
+  (( ${#files} > 0 )) || { print -u2 "no files match: $pattern"; exit 1; }
   mkdir -p "$out/$c"
-  cp "$from"/*.glb "$out/$c/"
-  print "files $c <- $from ($(ls "$from"/*.glb | wc -l | tr -d ' ') glb)"
+  cp "${files[@]}" "$out/$c/"
+  print "files $c <- ${#files} files (${files:t})"
 done
 
 print "\n$(find "$out" -type f | wc -l | tr -d ' ') files, $(du -sh "$out" | cut -f1) in $out"
