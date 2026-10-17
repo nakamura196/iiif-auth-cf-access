@@ -124,7 +124,7 @@ describe("top page", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain(`${BASE}/manifest/advisory/pic.json`);
-    expect(html).toContain(`https://kasane.ldas.jp/?manifest=${encodeURIComponent(`${BASE}/manifest/advisory/pic.json`)}`);
+    expect(html).toContain(`https://kasane.ldas.jp/viewer/?manifest=${encodeURIComponent(`${BASE}/manifest/advisory/pic.json`)}`);
     expect(html).toContain("tomcrane.github.io/iiif-auth-client/?manifest=");
   });
 });

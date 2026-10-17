@@ -10,7 +10,7 @@ import type { Demo, Env } from "./types.ts";
 const CLIENTS: { name: string; url: (manifest: string) => string; note: string }[] = [
   {
     name: "Kasane",
-    url: (m) => `https://kasane.ldas.jp/?manifest=${encodeURIComponent(m)}`,
+    url: (m) => `https://kasane.ldas.jp/viewer/?manifest=${encodeURIComponent(m)}`,
     note: "same site as this server (ldas.jp)",
   },
   {
