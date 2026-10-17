@@ -44,13 +44,18 @@ redirected to an Access login page (which would fail on CORS).
 For an image service (`/probe/<c>/image/<id>/info.json`) the probe answers `status` 200 without a `location`:
 the client then loads the tiles, which carry the cookie.
 
+Degraded access: in a collection with `substituteLabel`, the image `<id>-degraded` is a public copy (no auth
+services, tiles without a cookie). Without a good token, the probe of `<id>` answers `status` 401 with
+`substitute: [{ id: <the copy's service id>, type: "ImageService3", ... }]`; the client shows the copy and
+still offers the access service. (`location` is for 30x only: "load this instead", e.g. a signed URL.)
+
 Signed values are `base64url(JSON) "." base64url(HMAC-SHA256)`. The payload has `typ` (`session` or `token`),
 `c` (collection), `sub` (email) and `exp`. A token is never accepted as a session, a session never as a token,
 and neither across collections. The token is a different string from the cookie, as the spec requires.
 
 File keys are `<collection>/<path>`, for example `railclass/icet_411.glb` or `railclass/downloads/icet_411.stl`.
 Images are `<collection>/image/<id>/` with `info.json`, `meta.json` and the tiles of `vips dzsave --layout iiif3`;
-`scripts/build-demo-assets.zsh` makes them from `demo/images.json`.
+`scripts/build-demo-assets.zsh` makes them from `demo/images.json` (`"degraded": <px>` adds the greyscale `<id>-degraded`).
 
 ## Configuration
 
@@ -66,7 +71,8 @@ Images are `<collection>/image/<id>/` with `info.json`, `meta.json` and the tile
 | `ASSETS` | static assets binding | Files deployed with the Worker. Needs `run_worker_first: true`. |
 
 Collection entry: optional `mode` (`access`, the default, or `clickthrough`: no login, opening the access service is the agreement), `aud` (Access application AUD tag, not used by `clickthrough`), `allowedOrigins` (viewer origins), `label`, `heading`, `note`,
-`confirmLabel` (IIIF language maps), optional `logoutLabel`, `cookieMaxAge` (seconds).
+`confirmLabel` (IIIF language maps), optional `logoutLabel`, `cookieMaxAge` (seconds), optional `substituteLabel`
+(turns on degraded access, above).
 
 `workers_dev` and `preview_urls` are `false` on purpose: a `*.workers.dev` URL would not be behind Access.
 

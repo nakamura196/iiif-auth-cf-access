@@ -1,5 +1,5 @@
 import { readCookie } from "./auth.ts";
-import { SESSION_COOKIE_PREFIX, validPath } from "./config.ts";
+import { DEGRADED_SUFFIX, SESSION_COOKIE_PREFIX, validPath } from "./config.ts";
 import { verifyValue } from "./crypto.ts";
 import { serviceBlock } from "./iiif.ts";
 import { contentInfo } from "./mime.ts";
@@ -17,6 +17,8 @@ import type { CollectionConfig, Env, LanguageMap } from "./types.ts";
  *   which sends cookies but cannot send a bearer token.
  * - The probe of an image answers 200 when the token is good (no location):
  *   the client then loads the tiles with the cookie.
+ * - Degraded access (substituteLabel): "<id>-degraded" is a public copy with no
+ *   auth services, offered as the probe's `substitute` when the token is missing.
  */
 
 const CORS = { "Access-Control-Allow-Origin": "*" };
@@ -41,6 +43,11 @@ export function isImageProbePath(segs: string[]): boolean {
   return segs.length === 3 && segs[0] === "image" && segs[2] === "info.json";
 }
 
+/** The image is the public, degraded copy of another one. */
+export function isDegraded(id: string, cfg: CollectionConfig): boolean {
+  return !!cfg.substituteLabel && id.endsWith(DEGRADED_SUFFIX) && id.length > DEGRADED_SUFFIX.length;
+}
+
 function plain(status: number, text: string): Response {
   return new Response(text, {
     status,
@@ -63,16 +70,24 @@ export function imageServiceId(origin: string, c: string, id: string): string {
   return `${origin}/image/${enc(c)}/${enc(id)}`;
 }
 
-/** info.json with this host's id and the collection's auth services. */
+/** info.json with this host's id and the collection's auth services (none for a degraded copy). */
 export function imageService(info: Json, origin: string, c: string, id: string, cfg: CollectionConfig): Json {
   const others = (Array.isArray(info.service) ? (info.service as Json[]) : []).filter(
     (s) => s.type !== "AuthProbeService2",
   );
-  return {
-    ...info,
-    id: imageServiceId(origin, c, id),
-    service: [...others, serviceBlock(origin, c, imageProbePath(id), cfg)],
-  };
+  const auth = isDegraded(id, cfg) ? [] : [serviceBlock(origin, c, imageProbePath(id), cfg)];
+  const service = [...others, ...auth];
+  const { service: _drop, ...rest } = info;
+  void _drop;
+  return { ...rest, id: imageServiceId(origin, c, id), ...(service.length ? { service } : {}) };
+}
+
+/** The probe's `substitute` for an image: its degraded copy, if the collection has them and it exists. */
+export async function imageSubstitute(env: Env, origin: string, c: string, id: string, cfg: CollectionConfig) {
+  if (!cfg.substituteLabel || isDegraded(id, cfg)) return null;
+  const copy = `${id}${DEGRADED_SUFFIX}`;
+  if (!(await fileStore(env).head(`${c}/image/${copy}/info.json`))) return null;
+  return [{ id: imageServiceId(origin, c, copy), type: "ImageService3", profile: "level0", label: cfg.substituteLabel }];
 }
 
 /**
@@ -121,9 +136,12 @@ export async function handleImage(
   }
   if (rest[rest.length - 1] === "meta.json") return plain(404, "Not found");
 
-  const cookie = readCookie(request, `${SESSION_COOKIE_PREFIX}${c}`);
-  const verdict = cookie ? await verifyValue(env.SIGNING_KEY, cookie, "session", c, now) : null;
-  if (!verdict || !verdict.ok) return plain(401, "Unauthorized");
+  const open = isDegraded(id, cfg);
+  if (!open) {
+    const cookie = readCookie(request, `${SESSION_COOKIE_PREFIX}${c}`);
+    const verdict = cookie ? await verifyValue(env.SIGNING_KEY, cookie, "session", c, now) : null;
+    if (!verdict || !verdict.ok) return plain(401, "Unauthorized");
+  }
 
   const key = `${c}/image/${id}/${rest.join("/")}`;
   const store = fileStore(env);
@@ -135,7 +153,7 @@ export async function handleImage(
   }
   if (!body) return plain(404, "Not found");
   return new Response(body, {
-    headers: { ...CORS, "Content-Type": contentInfo(key).format, "Cache-Control": "private, max-age=3600" },
+    headers: { ...CORS, "Content-Type": contentInfo(key).format, "Cache-Control": `${open ? "public" : "private"}, max-age=3600` },
   });
 }
 

@@ -20,6 +20,12 @@ export interface CollectionConfig {
   logoutLabel?: LanguageMap;
   /** Session cookie lifetime in seconds. */
   cookieMaxAge: number;
+  /**
+   * Degraded access: users who have not been let in see a public, degraded copy of each
+   * image (the image "<id>-degraded"). The probe answers 401 with it as `substitute`.
+   * This is the copy's label.
+   */
+  substituteLabel?: LanguageMap;
 }
 
 export interface Env {

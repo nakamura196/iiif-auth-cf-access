@@ -16,5 +16,24 @@
       "rights": "http://creativecommons.org/publicdomain/mark/1.0/",
       "homepage": { "id": "https://dl.ndl.go.jp/pid/2540972/1/14", "label": { "en": ["NDL Digital Collections"], "ja": ["国立国会図書館デジタルコレクション"] } }
     }
+  },
+  {
+    "collection": "degraded",
+    "id": "hyakki17",
+    "source": "https://dl.ndl.go.jp/api/iiif/2540972/R0000017/full/full/0/default.jpg",
+    "degraded": 600,
+    "meta": {
+      "label": { "en": ["Hyakki Yagyō Emaki (Night Parade of One Hundred Demons), frame 17"], "ja": ["百鬼夜行絵巻（17 コマ目）"] },
+      "summary": {
+        "en": ["Mid-Edo period copy. National Diet Library, call number す-138."],
+        "ja": ["江戸中期の写本。国立国会図書館所蔵（請求記号 す-138）。"]
+      },
+      "requiredStatement": {
+        "label": { "en": ["Attribution"], "ja": ["出典"] },
+        "value": { "en": ["National Diet Library Digital Collections"], "ja": ["国立国会図書館デジタルコレクション「百鬼夜行絵巻」"] }
+      },
+      "rights": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "homepage": { "id": "https://dl.ndl.go.jp/pid/2540972/1/17", "label": { "en": ["NDL Digital Collections"], "ja": ["国立国会図書館デジタルコレクション"] } }
+    }
   }
 ]

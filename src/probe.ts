@@ -1,7 +1,7 @@
 import { fileUrlExpiry, validPath } from "./config.ts";
 import { hmacSign, verifyValue } from "./crypto.ts";
 import { encodePath } from "./iiif.ts";
-import { isImageProbePath } from "./images.ts";
+import { imageSubstitute, isImageProbePath } from "./images.ts";
 import { contentInfo } from "./mime.ts";
 import { fileStore } from "./store.ts";
 import type { CollectionConfig, Env } from "./types.ts";
@@ -40,10 +40,16 @@ export async function handleProbe(
   const m = /^Bearer\s+(\S+)$/i.exec(auth);
   const verdict = m ? await verifyValue(env.SIGNING_KEY, m[1], "token", c, now) : null;
   if (!verdict || !verdict.ok) {
+    // Degraded access: the client shows the substitute and still offers the access service.
+    const substitute =
+      validPath(segs) && isImageProbePath(segs)
+        ? await imageSubstitute(env, new URL(request.url).origin, c, segs[1], cfg)
+        : null;
     return json({
       "@context": CONTEXT,
       type: "AuthProbeResult2",
       status: 401,
+      ...(substitute ? { substitute } : {}),
       heading: cfg.heading,
       note: cfg.note,
     });

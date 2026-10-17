@@ -128,3 +128,60 @@ describe("top page", () => {
     expect(html).toContain("tomcrane.github.io/iiif-auth-client/?manifest=");
   });
 });
+
+describe("degraded access", () => {
+  const SUB = `${BASE}/image/graded/pic-degraded`;
+
+  async function agreeGraded(): Promise<string> {
+    const res = await call("/auth/login/graded");
+    return (res.headers.get("Set-Cookie") ?? "").split(";")[0];
+  }
+
+  beforeAll(async () => {
+    await env.FILES!.put("graded/image/pic/info.json", JSON.stringify(INFO));
+    await env.FILES!.put("graded/image/pic/0,0,512,512/512,/0/default.jpg", TILE);
+    await env.FILES!.put("graded/image/pic-degraded/info.json", JSON.stringify({ ...INFO, width: 300, height: 240 }));
+    await env.FILES!.put("graded/image/pic-degraded/0,0,300,240/300,240/0/default.jpg", TILE);
+    await env.FILES!.put("graded/image/lone/info.json", JSON.stringify(INFO));
+  });
+
+  it("probe: 401 with the degraded copy as substitute, 200 without it once agreed", async () => {
+    const before = (await (await call("/probe/graded/image/pic/info.json")).json()) as Record<string, unknown>;
+    expect(before.status).toBe(401);
+    expect(before.substitute).toEqual([
+      { id: SUB, type: "ImageService3", profile: "level0", label: { en: ["Small greyscale copy"] } },
+    ]);
+    expect(before.heading).toBeDefined();
+    const token = await getToken(await agreeGraded(), "graded");
+    const after = (await (
+      await call("/probe/graded/image/pic/info.json", { headers: { Authorization: `Bearer ${token}` } })
+    ).json()) as Record<string, unknown>;
+    expect(after.status).toBe(200);
+    expect(after.substitute).toBeUndefined();
+  });
+
+  it("the degraded copy is public: no auth services, tiles without a cookie", async () => {
+    const info = (await (await call("/image/graded/pic-degraded/info.json")).json()) as Record<string, unknown>;
+    expect(info.id).toBe(SUB);
+    expect(info.service).toBeUndefined();
+    const tile = await call("/image/graded/pic-degraded/0,0,300,240/300,/0/default.jpg");
+    expect(tile.status).toBe(200);
+    expect(tile.headers.get("Cache-Control")).toBe("public, max-age=3600");
+  });
+
+  it("the full image still needs the cookie", async () => {
+    expect((await call("/image/graded/pic/0,0,512,512/512,/0/default.jpg")).status).toBe(401);
+  });
+
+  it("no substitute when the copy is missing or the collection has none", async () => {
+    const lone = (await (await call("/probe/graded/image/lone/info.json")).json()) as Record<string, unknown>;
+    expect(lone.status).toBe(401);
+    expect(lone.substitute).toBeUndefined();
+    await env.FILES!.put("advisory/image/pic-degraded/info.json", JSON.stringify(INFO));
+    await env.FILES!.put("advisory/image/pic-degraded/0,0,512,512/512,512/0/default.jpg", TILE);
+    const plain = (await (await call("/probe/advisory/image/pic/info.json")).json()) as Record<string, unknown>;
+    expect(plain.substitute).toBeUndefined();
+    // Without substituteLabel, "-degraded" is an ordinary, protected image.
+    expect((await call("/image/advisory/pic-degraded/0,0,512,512/512,/0/default.jpg")).status).toBe(401);
+  });
+});
