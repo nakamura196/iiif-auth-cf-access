@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { BASE, call, env, getToken } from "./helpers.ts";
+import { withHeight } from "../src/images.ts";
 
 const INFO = {
   "@context": "http://iiif.io/api/image/3/context.json",
@@ -37,6 +38,12 @@ describe("image service", () => {
     expect(info.service[0]).toMatchObject({ type: "AuthProbeService2", id: `${BASE}/probe/advisory/image/pic/info.json` });
   });
 
+  it("the service id redirects to info.json", async () => {
+    const res = await call("/image/advisory/pic");
+    expect(res.status).toBe(303);
+    expect(res.headers.get("Location")).toBe(`${BASE}/image/advisory/pic/info.json`);
+  });
+
   it("a tile needs the cookie", async () => {
     expect((await call("/image/advisory/pic/0,0,512,512/512,/0/default.jpg")).status).toBe(401);
     const cookie = await agree();
@@ -44,6 +51,16 @@ describe("image service", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("image/jpeg");
     expect(new Uint8Array(await res.arrayBuffer())).toEqual(TILE);
+  });
+
+  it("a tile asked for as \"w,\" is served from the \"w,h\" file", async () => {
+    await env.FILES!.put("advisory/image/pic/512,0,488,800/244,400/0/default.jpg", TILE);
+    const cookie = await agree();
+    const res = await call("/image/advisory/pic/512,0,488,800/244,/0/default.jpg", { headers: { Cookie: cookie } });
+    expect(res.status).toBe(200);
+    expect(withHeight(["0,0,1024,1024", "512,", "0", "default.jpg"])).toEqual(["0,0,1024,1024", "512,512", "0", "default.jpg"]);
+    expect(withHeight(["8192,0,509,1024", "255,", "0", "default.jpg"])).toEqual(["8192,0,509,1024", "255,512", "0", "default.jpg"]);
+    expect(withHeight(["full", "512,", "0", "default.jpg"])).toBeNull();
   });
 
   it("another collection's cookie does not open the tiles", async () => {
@@ -107,7 +124,7 @@ describe("top page", () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain(`${BASE}/manifest/advisory/pic.json`);
-    expect(html).toContain(`https://kasane.ldas.jp/?manifest=${encodeURIComponent(`${BASE}/manifest/advisory/pic.json`)}`);
+    expect(html).toContain(`https://kasane.ldas.jp/viewer/?manifest=${encodeURIComponent(`${BASE}/manifest/advisory/pic.json`)}`);
     expect(html).toContain("tomcrane.github.io/iiif-auth-client/?manifest=");
   });
 });

@@ -214,3 +214,11 @@ iiif-auth-demo.ldas.jp を「Auth 2.0 の型を 1 つずつ試せるサイト」
   wrangler dev は custom_domain の route があると、要求の URL を本番のホスト名（http://iiif-auth-demo.ldas.jp）に書き換える。手元で Kasane からは開けない。ブラウザでの確認は配備後。
 - 確かめていないこと: tomcrane client（github.io、別サイト）で、第三者 Cookie の制限によりトークンが取れない、という見込み。
   tomcrane client の劣化版は `substitute` という古い書き方を読む。Kasane は `location` を読む。2 番目の型（劣化版）では両方の違いが出る。
+
+## 2026-10-17 配備して見つかった食い違い 2 つ
+
+最初の型（terms/hyakki）を iiif-auth-demo.ldas.jp に配り、ブラウザで開いた。curl では 401→同意→200 が通っていたが、ビューアでは画像が出なかった。
+
+- Kasane（OpenSeadragon）はタイルを `x,y,w,h/512,/0/default.jpg`（幅だけ）で頼む。`vips dzsave --layout iiif3` は `512,512`（幅・高さ）の名前で書く。level 0 では名前が一致しないと 404 になる。Worker で `w,` を `w,h` に読み替えて直した。高さは vips と同じく「領域 ÷ 2 のべき乗、切り上げ」で出す。329 枚すべてで一致を確かめた。
+- tomcrane の client は、画像サービスの id（`/info.json` なし）を直接読む。Image API 3 は id から info.json への 303 を推奨しているが、無かったので 404 になっていた。303 を返すようにした。
+- 教訓: level 0 のタイルを手で置くときは、クライアントごとの頼み方（`w,` / `w,h`、id の直読み）を実物で確かめる。curl で自分の URL を叩くだけでは見つからない。
