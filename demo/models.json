@@ -1,0 +1,23 @@
+[
+  {
+    "collection": "degraded3d",
+    "id": "ueno",
+    "source": "https://nakamura196.github.io/hongo-campus-iiif/ueno-points-full.glb",
+    "degraded": "https://nakamura196.github.io/hongo-campus-iiif/ueno-points-light.glb",
+    "meta": {
+      "label": { "en": ["Ueno station area: LiDAR points"], "ja": ["上野駅周辺の点群"] },
+      "summary": {
+        "en": ["About 260 x 290 m around Ueno station from airborne LiDAR (surveyed March-April 2023). Before agreeing you see a lighter point cloud; agreeing loads the full one."],
+        "ja": ["上野駅周辺の約 260 × 290 m を、航空レーザー測量の点群（2023 年 3〜4 月計測）で示します。同意する前は軽い点群が見え、同意すると高精細の点群に替わります。"]
+      },
+      "requiredStatement": {
+        "label": { "en": ["Attribution"], "ja": ["出典"] },
+        "value": {
+          "en": ["Tokyo Metropolitan Government, Tokyo Digital Twin Project, ward-area point cloud (CC BY 4.0), processed."],
+          "ja": ["東京都「東京都デジタルツイン実現プロジェクト 区部点群データ」(CC BY 4.0) を加工。"]
+        }
+      },
+      "rights": "http://creativecommons.org/licenses/by/4.0/"
+    }
+  }
+]

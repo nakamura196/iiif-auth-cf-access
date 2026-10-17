@@ -2,8 +2,9 @@ import { validPath } from "./config.ts";
 import { hmacVerify } from "./crypto.ts";
 import { contentInfo } from "./mime.ts";
 import { fileSignatureInput } from "./probe.ts";
+import { isPublicModelPath } from "./models.ts";
 import { fileStore } from "./store.ts";
-import type { Env } from "./types.ts";
+import type { CollectionConfig, Env } from "./types.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,6 +38,7 @@ export async function handleFiles(
   request: Request,
   env: Env,
   c: string,
+  cfg: CollectionConfig,
   segs: (string | null)[],
   now: number,
 ): Promise<Response> {
@@ -49,13 +51,18 @@ export async function handleFiles(
   if (!validPath(segs)) return plain(404, "Not found");
   const path = segs.join("/");
 
-  const q = new URL(request.url).searchParams;
-  const expStr = q.get("exp");
-  const sig = q.get("sig");
-  if (!expStr || !sig || !/^\d{1,12}$/.test(expStr)) return plain(403, "Forbidden");
-  const exp = Number(expStr);
-  if (!(await hmacVerify(env.SIGNING_KEY, fileSignatureInput(c, path, exp), sig))) return plain(403, "Forbidden");
-  if (exp <= now) return plain(403, "Expired");
+  // A degraded copy (the probe's substitute) is public; everything else needs a signed URL.
+  let cacheControl = "public, max-age=3600";
+  if (!isPublicModelPath(segs, cfg)) {
+    const q = new URL(request.url).searchParams;
+    const expStr = q.get("exp");
+    const sig = q.get("sig");
+    if (!expStr || !sig || !/^\d{1,12}$/.test(expStr)) return plain(403, "Forbidden");
+    const exp = Number(expStr);
+    if (!(await hmacVerify(env.SIGNING_KEY, fileSignatureInput(c, path, exp), sig))) return plain(403, "Forbidden");
+    if (exp <= now) return plain(403, "Expired");
+    cacheControl = `private, max-age=${exp - now}`;
+  }
 
   const key = `${c}/${path}`;
   const store = fileStore(env);
@@ -67,7 +74,7 @@ export async function handleFiles(
     "Content-Type": contentInfo(path).format,
     "Accept-Ranges": "bytes",
     ...(head.etag ? { ETag: head.etag } : {}),
-    "Cache-Control": `private, max-age=${exp - now}`,
+    "Cache-Control": cacheControl,
   };
 
   const range = parseRange(request.headers.get("Range"), head.size);

@@ -41,13 +41,15 @@ export interface Env {
   DEMOS?: Demo[] | string;
 }
 
-/** One entry of the showcase's top page: an image of a collection. */
+/** One entry of the showcase's top page: an image or a 3D model of a collection. */
 export interface Demo {
   /** Short name of the pattern, e.g. "clickthrough". */
   type: string;
   collection: string;
-  /** Image id under "<collection>/image/". */
-  image: string;
+  /** Image id under "<collection>/image/". Give this or `model`. */
+  image?: string;
+  /** Model id under "<collection>/model/". */
+  model?: string;
   title: LanguageMap;
   description: LanguageMap;
 }

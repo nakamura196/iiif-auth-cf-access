@@ -48,6 +48,9 @@ Degraded access: in a collection with `substituteLabel`, the image `<id>-degrade
 services, tiles without a cookie). Without a good token, the probe of `<id>` answers `status` 401 with
 `substitute: [{ id: <the copy's service id>, type: "ImageService3", ... }]`; the client shows the copy and
 still offers the access service. (`location` is for 30x only: "load this instead", e.g. a signed URL.)
+The same works for a 3D model `<c>/model/<id>/model.glb`: `<id>-degraded/model.glb` (e.g. a lighter point
+cloud) is served from `/files` without a signature and offered as `substitute: [{ id, type: "Model", ... }]`;
+once the token is good, the probe answers 302 with a signed URL of the full model.
 
 Signed values are `base64url(JSON) "." base64url(HMAC-SHA256)`. The payload has `typ` (`session` or `token`),
 `c` (collection), `sub` (email) and `exp`. A token is never accepted as a session, a session never as a token,
@@ -56,6 +59,9 @@ and neither across collections. The token is a different string from the cookie,
 File keys are `<collection>/<path>`, for example `railclass/icet_411.glb` or `railclass/downloads/icet_411.stl`.
 Images are `<collection>/image/<id>/` with `info.json`, `meta.json` and the tiles of `vips dzsave --layout iiif3`;
 `scripts/build-demo-assets.zsh` makes them from `demo/images.json` (`"degraded": <px>` adds the greyscale `<id>-degraded`).
+Models are `<collection>/model/<id>/` with `model.glb` and `meta.json`, made from `demo/models.json`
+(`"degraded": <url>` adds `<id>-degraded/model.glb`). `/manifest/<c>/<id>.json` builds a Presentation 4
+manifest with one Scene for a model.
 
 ## Configuration
 

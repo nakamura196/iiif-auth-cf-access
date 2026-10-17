@@ -49,6 +49,16 @@
           "en": ["Before agreeing, the viewer shows a small greyscale copy (the probe answers 401 with a substitute). Agreeing replaces it with the full colour image. Clients that do not read substitute show nothing until you agree."],
           "ja": ["同意する前は、小さな白黒の版が見えます（probe が 401 と substitute を返す型）。同意すると、カラーの高精細版に替わります。substitute を読まないビューアでは、同意するまで何も出ません。"]
         }
+      },
+      {
+        "type": "degraded (3D)",
+        "collection": "degraded3d",
+        "model": "ueno",
+        "title": { "en": ["See a lighter point cloud first (3D)"], "ja": ["まず軽い点群を見せる（3D）"] },
+        "description": {
+          "en": ["The same pattern for a 3D model. Before agreeing, the viewer shows a lighter point cloud (1.7 MB, the probe's substitute). Agreeing loads the full one (17 MB) through a signed URL (the probe answers 302 with a location). Needs a viewer that shows IIIF 3D (Presentation 4 Scenes), such as Kasane."],
+          "ja": ["同じ型を 3D モデルで。同意する前は軽い点群（1.7 MB、probe の substitute）が見えます。同意すると、高精細の点群（17 MB）を署名付き URL で読みます（probe が 302 と location を返す）。IIIF の 3D（Presentation 4 の Scene）を表示できるビューア（Kasane など）で開いてください。"]
+        }
       }
     ],
     "COLLECTIONS": {
@@ -77,6 +87,20 @@
         "confirmLabel": { "en": ["Agree and view"], "ja": ["同意して表示"] },
         "logoutLabel": { "en": ["Withdraw agreement"], "ja": ["同意を取り消す"] },
         "substituteLabel": { "en": ["Small greyscale copy"], "ja": ["小さな白黒の版"] },
+        "cookieMaxAge": 3600
+      },
+      "degraded3d": {
+        "mode": "clickthrough",
+        "allowedOrigins": ["https://kasane.ldas.jp", "https://tomcrane.github.io", "http://localhost:3838"],
+        "label": { "en": ["Agree to the terms of use"], "ja": ["利用条件に同意する"] },
+        "heading": { "en": ["Full point cloud after agreeing"], "ja": ["同意すると高精細の点群が見られます"] },
+        "note": {
+          "en": ["You are looking at a lighter point cloud. Agree to the terms of use to load the full one (17 MB). The data is open (CC BY 4.0); the agreement is here only to show how the IIIF Authorization Flow works. Please credit the Tokyo Metropolitan Government (Tokyo Digital Twin Project) when you use it."],
+          "ja": ["いま見えているのは、軽い点群です。利用条件に同意すると、高精細の点群（17 MB）を読み込みます。データはオープンデータ（CC BY 4.0）です。この確認は、IIIF の認証の動きをお見せするためだけに入れています。使うときは、出典（東京都デジタルツイン実現プロジェクト）を示してください。"]
+        },
+        "confirmLabel": { "en": ["Agree and view"], "ja": ["同意して表示"] },
+        "logoutLabel": { "en": ["Withdraw agreement"], "ja": ["同意を取り消す"] },
+        "substituteLabel": { "en": ["Points (light)"], "ja": ["点群（軽量）"] },
         "cookieMaxAge": 3600
       },
       "ueno": {
