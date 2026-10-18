@@ -7,16 +7,19 @@ import type { Demo, Env } from "./types.ts";
  * Deployments without DEMOS (e.g. RailClass) have no top page.
  */
 
-const CLIENTS: { name: string; url: (manifest: string) => string; note: string }[] = [
+// `models`: whether the client shows 3D (Presentation 4 Scenes).
+const CLIENTS: { name: string; url: (manifest: string) => string; note: string; models: boolean }[] = [
   {
     name: "Kasane",
     url: (m) => `https://kasane.ldas.jp/viewer/?manifest=${encodeURIComponent(m)}`,
     note: "same site as this server (ldas.jp)",
+    models: true,
   },
   {
     name: "IIIF Auth 2 client (tomcrane)",
     url: (m) => `https://tomcrane.github.io/iiif-auth-client/?manifest=${encodeURIComponent(m)}`,
     note: "another site (github.io): browsers that block third-party cookies will fail",
+    models: false,
   },
 ];
 
@@ -38,7 +41,8 @@ export function homePage(origin: string, demos: Demo[]): Response {
     .map((d) => {
       const c = encodeURIComponent(d.collection);
       const manifest = `${origin}/manifest/${c}/${encodeURIComponent(d.image ?? d.model ?? "")}.json`;
-      const clients = CLIENTS.map(
+      const clients = CLIENTS.filter((k) => d.image !== undefined || k.models)
+        .map(
         (k) =>
           `<li><a href="${escapeHtml(k.url(manifest))}">${escapeHtml(k.name)}</a> <small>${escapeHtml(k.note)}</small></li>`,
       ).join("");
