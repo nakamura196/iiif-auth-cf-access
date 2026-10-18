@@ -76,7 +76,7 @@ manifest with one Scene for a model.
 | `FILES` | R2 binding | Private bucket. Use this or `ASSETS`. |
 | `ASSETS` | static assets binding | Files deployed with the Worker. Needs `run_worker_first: true`. |
 
-Collection entry: optional `mode` (`access`, the default, or `clickthrough`: no login, opening the access service is the agreement), `aud` (Access application AUD tag, not used by `clickthrough`), `allowedOrigins` (viewer origins), `label`, `heading`, `note`,
+Collection entry: optional `mode` (`access`, the default, or `clickthrough`: no login, opening the access service is the agreement; `login`: a form with a demo ID and password, opened by the viewer in a popup; `external`: the same form, opened by the user first in an ordinary tab, and the access service has profile `external` with no `id`, so the viewer only asks the token service), `demoUser` / `demoPassword` (required for `login` and `external`; deliberately public, shown on the form, never a real secret), `aud` (Access application AUD tag, only for `access`), `allowedOrigins` (viewer origins), `label`, `heading`, `note`,
 `confirmLabel` (IIIF language maps), optional `logoutLabel`, `cookieMaxAge` (seconds), optional `substituteLabel`
 (turns on degraded access, above).
 
