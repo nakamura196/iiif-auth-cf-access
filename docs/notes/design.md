@@ -257,3 +257,14 @@ iiif-auth-demo.ldas.jp を「Auth 2.0 の型を 1 つずつ試せるサイト」
 - 同意後に「Could not load the image」が残る、という報告が一度あった。手元では再現しなかった。タイミング次第で出る見込みで、Kasane 側で「タイルが 1 枚でも読めたら消す」ようにした。その版で両方の見本をもう一度見て、同意の数秒後にこの文言が出ていないことを確かめた（Chrome、1 回ずつ）。
 - 分かったこと: 劣化版は、サーバを仕様どおりにしても、クライアントが `substitute` を読まなければ見せられない。2024 年までのクライアントは、単一のオブジェクトを前提にしていることがある。デモでは「同じ probe の応答が、クライアントによって違って見える」こと自体を見せる。
 - 確かめていないこと: Mirador での見え方。第三者 Cookie を止めたブラウザでの tomcrane client（前回からの積み残し）。
+
+## 2026-10-17 3 番目の型（3D の劣化版）
+
+上野の点群で、劣化版を 3D に広げた。まとまり `degraded3d`。上野の代表見本（hongo-campus-iiif の ueno.json）は変えず、デモサイトに別の見本として置いた（本人の選択）。代表見本を劣化版にすると、PLATEAU の模型を選んでも同意前は点群が出る、という食い違いが出るため。
+
+- 作り: 画像の劣化版と同じ名前の決まりにした。`<まとまり>/model/<id>/model.glb` が高精細（17,478,236 バイト）、`<id>-degraded/model.glb` が軽い点群（1,666,960 バイト）。トークンの無い probe は 401 と `substitute: [{ type: "Model", format: "model/gltf-binary", ... }]` を返す。軽い版は `/files` から署名なしで配る（`substituteLabel` のあるまとまりだけ）。同意後は従来どおり 302 と署名付き URL。
+- マニフェストは Worker が組み立てる（Presentation 4、Scene 1 つ）。元のファイルは github.io の公開 URL から `demo/models.json` でビルド時に取る。手元のファイルに頼らないので、worktree を消しても作り直せる。
+- 手元で確認: wrangler dev（8799）と Kasane の next dev（3838、既存の allowedOrigins に入っている）。軽い点群＋同意の案内 → 同意 → 高精細に替わった。通信は probe 200（中身 401）→ 軽い版 200 → token → probe → 署名付き URL 200。
+- 落とし穴: 本番の Kasane（https）から手元の http://localhost のマニフェストは読みに行かなかった（通信が 1 本も出ない）。手元の確認は Kasane も手元で動かす。
+- 分かったこと: 3D では「劣化版」が画質を落とした同じ物とは限らない。点群を間引いた版、形式の違う版（点群とメッシュ）も substitute にできる。ただし Kasane は substitute を 1 つしか見ない。
+- 確かめていないこと: 本番への配備。tomcrane client は 3D を表示しないので対象外。

@@ -74,7 +74,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     const c = decodeSeg(second);
     if (!c || !Object.hasOwn(collections, c)) return notFound();
     const path = segs.slice(3).map(decodeSeg);
-    return handleFiles(request, env, c, path, now);
+    return handleFiles(request, env, c, collections[c], path, now);
   }
 
   return notFound();

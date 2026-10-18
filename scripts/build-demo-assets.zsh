@@ -11,12 +11,15 @@
 #   <out-dir>/<collection>/image/<id>/ together with its meta.json.
 #   With "degraded": <px>, a greyscale copy at most <px> wide or high is cut too,
 #   as <id>-degraded (served publicly to collections with substituteLabel).
+# - Each model in demo/models.json is downloaded into <out-dir>/<collection>/model/<id>/model.glb
+#   with its meta.json; with "degraded": <url>, that file (e.g. a lighter point cloud)
+#   becomes <id>-degraded/model.glb (served publicly to collections with substituteLabel).
 # - <collection>=<file pattern> copies the matching files into <out-dir>/<collection>/.
 # Needs vips and jq. <out-dir> is emptied first.
 set -euo pipefail
 
 if (( $# < 1 )); then
-  sed -n '2,15p' "$0"; exit 2
+  sed -n '2,18p' "$0"; exit 2
 fi
 out=${1:a}; shift
 cd "${0:A:h}/.."
@@ -58,6 +61,23 @@ for (( i = 0; i < n; i++ )); do
     rm "$tmp/small.v" "$tmp/gray.jpg"
   fi
   rm "$tmp/src.jpg"
+done
+
+n=$(jq length demo/models.json)
+for (( i = 0; i < n; i++ )); do
+  c=$(jq -r ".[$i].collection" demo/models.json)
+  id=$(jq -r ".[$i].id" demo/models.json)
+  src=$(jq -r ".[$i].source" demo/models.json)
+  degraded=$(jq -r ".[$i].degraded // empty" demo/models.json)
+  print "model $c/$id <- $src"
+  mkdir -p "$out/$c/model/$id"
+  curl -sfL -o "$out/$c/model/$id/model.glb" "$src"
+  jq ".[$i].meta" demo/models.json > "$out/$c/model/$id/meta.json"
+  if [[ -n $degraded ]]; then
+    print "model $c/$id-degraded <- $degraded"
+    mkdir -p "$out/$c/model/$id-degraded"
+    curl -sfL -o "$out/$c/model/$id-degraded/model.glb" "$degraded"
+  fi
 done
 
 for pair in "$@"; do

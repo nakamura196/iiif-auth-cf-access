@@ -37,7 +37,7 @@ export function homePage(origin: string, demos: Demo[]): Response {
   const items = demos
     .map((d) => {
       const c = encodeURIComponent(d.collection);
-      const manifest = `${origin}/manifest/${c}/${encodeURIComponent(d.image)}.json`;
+      const manifest = `${origin}/manifest/${c}/${encodeURIComponent(d.image ?? d.model ?? "")}.json`;
       const clients = CLIENTS.map(
         (k) =>
           `<li><a href="${escapeHtml(k.url(manifest))}">${escapeHtml(k.name)}</a> <small>${escapeHtml(k.note)}</small></li>`,
@@ -57,8 +57,8 @@ export function homePage(origin: string, demos: Demo[]): Response {
       `<style>${STYLE}</style>` +
       "<h1>IIIF Auth 2.0 demo</h1>" +
       '<p>Working examples of the <a href="https://iiif.io/api/auth/2.0/">IIIF Authorization Flow API 2.0</a>, one per pattern. ' +
-      "The images are public domain; the access control is only there to show how the flow works.<br>" +
-      "IIIF の認証（Authorization Flow API 2.0）の型を、1 つずつ試せる見本です。画像はパブリックドメインです。制限は仕組みを見せるためだけに掛けています。</p>" +
+      "The images are public domain and the 3D models are open data; the access control is only there to show how the flow works.<br>" +
+      "IIIF の認証（Authorization Flow API 2.0）の型を、1 つずつ試せる見本です。画像はパブリックドメイン、3D モデルはオープンデータです。制限は仕組みを見せるためだけに掛けています。</p>" +
       items +
       '<h2>Source</h2><p><a href="https://github.com/nakamura196/iiif-auth-cf-access">nakamura196/iiif-auth-cf-access</a> (MIT)</p>',
     headers: { "Cache-Control": "public, max-age=300" },

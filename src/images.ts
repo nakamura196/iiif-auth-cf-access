@@ -3,6 +3,7 @@ import { DEGRADED_SUFFIX, SESSION_COOKIE_PREFIX, validPath } from "./config.ts";
 import { verifyValue } from "./crypto.ts";
 import { serviceBlock } from "./iiif.ts";
 import { contentInfo } from "./mime.ts";
+import { modelManifest } from "./models.ts";
 import { fileStore } from "./store.ts";
 import type { CollectionConfig, Env, LanguageMap } from "./types.ts";
 
@@ -169,8 +170,11 @@ export async function handleManifest(
     readJson(env, `${c}/image/${id}/info.json`),
     readJson(env, `${c}/image/${id}/meta.json`) as Promise<ImageMeta | null>,
   ]);
-  if (!info || !meta) return plain(404, "Not found");
   const origin = new URL(request.url).origin;
+  if (!info || !meta) {
+    const model = await modelManifest(env, origin, c, cfg, id);
+    return model ? json(model) : plain(404, "Not found");
+  }
   const base = `${origin}/manifest/${enc(c)}/${enc(id)}`;
   const service = imageService(info, origin, c, id, cfg);
   const { width, height } = info as { width: number; height: number };
