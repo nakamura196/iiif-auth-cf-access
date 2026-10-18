@@ -127,6 +127,16 @@ describe("top page", () => {
     expect(html).toContain(`https://kasane.ldas.jp/viewer/?manifest=${encodeURIComponent(`${BASE}/manifest/advisory/pic.json`)}`);
     expect(html).toContain("tomcrane.github.io/iiif-auth-client/?manifest=");
   });
+
+  it("links 3D demos only to clients that show 3D", async () => {
+    const demos = [
+      { type: "degraded (3D)", collection: "advisory", model: "m", title: { en: ["3D"] }, description: { en: ["d"] } },
+    ];
+    const { default: worker } = await import("../src/index.ts");
+    const html = await (await worker.fetch(new Request(`${BASE}/`), { ...env, DEMOS: demos })).text();
+    expect(html).toContain("https://kasane.ldas.jp/viewer/?manifest=");
+    expect(html).not.toContain("tomcrane.github.io");
+  });
 });
 
 describe("degraded access", () => {
