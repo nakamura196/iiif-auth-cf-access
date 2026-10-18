@@ -1,7 +1,7 @@
 import { verifyAccessJwt } from "./access.ts";
 import { SESSION_COOKIE_PREFIX, TOKEN_LIFETIME } from "./config.ts";
 import { signValue, verifyValue } from "./crypto.ts";
-import { htmlPage, safeJson } from "./html.ts";
+import { escapeHtml, htmlPage, safeJson } from "./html.ts";
 import type { CollectionConfig, Env } from "./types.ts";
 
 export function cookieAttrs(maxAge: number): string {
@@ -27,6 +27,10 @@ export async function handleLogin(
   cfg: CollectionConfig,
   now: number,
 ): Promise<Response> {
+  if (request.method === "POST" && cfg.mode !== "login" && cfg.mode !== "external") {
+    return htmlPage({ status: 405, title: "Method not allowed", body: "<h1>Method not allowed</h1>", headers: { Allow: "GET" } });
+  }
+  if (cfg.mode === "login" || cfg.mode === "external") return handleFormLogin(request, env, c, cfg, now);
   if (cfg.mode === "clickthrough") {
     const session = await signValue(env.SIGNING_KEY, { typ: "session", c, sub: "clickthrough", exp: now + cfg.cookieMaxAge });
     return htmlPage({
@@ -69,6 +73,88 @@ export async function handleLogin(
   });
 }
 
+/* ---------- form login ("login" and "external" modes) ---------- */
+
+const t = (m: Record<string, string[]>, lang: string) => (m[lang] ?? Object.values(m)[0] ?? []).join(" ");
+
+/** Compare in time that does not depend on where the strings differ. */
+function sameText(a: string, b: string): boolean {
+  const ea = new TextEncoder().encode(a);
+  const eb = new TextEncoder().encode(b);
+  let diff = ea.length ^ eb.length;
+  for (let i = 0; i < Math.max(ea.length, eb.length); i++) diff |= (ea[i] ?? 0) ^ (eb[i] ?? 0);
+  return diff === 0;
+}
+
+function loginForm(c: string, cfg: CollectionConfig, user: string, password: string, error: boolean): Response {
+  const body =
+    `<h1>${escapeHtml(t(cfg.heading, "en"))} / ${escapeHtml(t(cfg.heading, "ja"))}</h1>` +
+    `<p>${escapeHtml(t(cfg.note, "en"))}<br>${escapeHtml(t(cfg.note, "ja"))}</p>` +
+    (error
+      ? '<p role="alert"><strong>The ID or password is wrong. / ID またはパスワードが違います。</strong></p>'
+      : "") +
+    `<p>Demo account (public) / 見本のアカウント（公開）:<br>ID: <code>${escapeHtml(user)}</code> / Password: <code>${escapeHtml(password)}</code></p>` +
+    `<form method="post" action="/auth/login/${encodeURIComponent(c)}">` +
+    '<p><label>ID<br><input name="username" autocomplete="username" required></label></p>' +
+    '<p><label>Password / パスワード<br><input name="password" type="password" autocomplete="current-password" required></label></p>' +
+    '<p><button type="submit">Log in / ログイン</button></p></form>';
+  return htmlPage({ status: error ? 401 : 200, title: "Log in", body });
+}
+
+async function handleFormLogin(
+  request: Request,
+  env: Env,
+  c: string,
+  cfg: CollectionConfig,
+  now: number,
+): Promise<Response> {
+  const user = cfg.demoUser;
+  const password = cfg.demoPassword;
+  if (!user || !password) {
+    console.error(`collection ${c}: demoUser / demoPassword are not set`);
+    return htmlPage({
+      status: 503,
+      title: "Unavailable",
+      body: "<h1>Temporarily unavailable / 一時的に利用できません</h1><p>This login is not configured.<br>このログインは設定されていません。</p>",
+    });
+  }
+  if (request.method !== "POST") return loginForm(c, cfg, user, password, false);
+
+  let username = "";
+  let given = "";
+  try {
+    const form = await request.formData();
+    const u = form.get("username");
+    const p = form.get("password");
+    if (typeof u === "string") username = u;
+    if (typeof p === "string") given = p;
+  } catch {
+    // not a form: treated as wrong credentials
+  }
+  const okUser = sameText(username, user);
+  const okPass = sameText(given, password);
+  if (!(okUser && okPass)) return loginForm(c, cfg, user, password, true);
+
+  const session = await signValue(env.SIGNING_KEY, { typ: "session", c, sub: username, exp: now + cfg.cookieMaxAge });
+  const headers = { "Set-Cookie": `${SESSION_COOKIE_PREFIX}${c}=${session}; ${cookieAttrs(cfg.cookieMaxAge)}` };
+  if (cfg.mode === "external") {
+    return htmlPage({
+      title: "Logged in",
+      body:
+        "<h1>Logged in / ログインしました</h1>" +
+        "<p>Now go back to the viewer and open it (or reload it).<br>ビューアに戻って、開く（または再読み込みする）と見られます。</p>" +
+        '<p><a href="/">Back to the top page / トップページへ</a></p>',
+      headers,
+    });
+  }
+  return htmlPage({
+    title: "Logged in",
+    body: "<h1>Logged in / ログインしました</h1><p>You can close this window.<br>このウィンドウを閉じてください。</p>",
+    script: "window.close();",
+    headers,
+  });
+}
+
 /* ---------- AuthLogoutService2 ---------- */
 
 export function handleLogout(env: Env, c: string, cfg: CollectionConfig): Response {
@@ -77,6 +163,13 @@ export function handleLogout(env: Env, c: string, cfg: CollectionConfig): Respon
     return htmlPage({
       title: "Reset",
       body: "<h1>Reset / 取り消しました</h1><p>You will be asked to agree again.<br>次に開くときは、もう一度確認します。</p>",
+      headers: clear,
+    });
+  }
+  if (cfg.mode === "login" || cfg.mode === "external") {
+    return htmlPage({
+      title: "Logged out",
+      body: "<h1>Logged out / ログアウトしました</h1><p>You can close this window.<br>このウィンドウを閉じてください。</p>",
       headers: clear,
     });
   }

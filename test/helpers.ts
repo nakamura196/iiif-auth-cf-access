@@ -29,6 +29,9 @@ export const env: Env = {
     other: { ...base, aud: AUD_OTHER, allowedOrigins: ["https://other.example"] },
     advisory: { ...base, mode: "clickthrough", aud: undefined },
     graded: { ...base, mode: "clickthrough", aud: undefined, substituteLabel: { en: ["Small greyscale copy"] } },
+    formlogin: { ...base, mode: "login", aud: undefined, demoUser: "demo", demoPassword: "pw-for-test" },
+    extlogin: { ...base, mode: "external", aud: undefined, demoUser: "demo", demoPassword: "pw-for-test" },
+    nopass: { ...base, mode: "login", aud: undefined, demoUser: "demo" },
     noaud: { ...base, aud: undefined },
   },
 };

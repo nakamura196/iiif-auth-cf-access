@@ -6,8 +6,18 @@ export interface CollectionConfig {
    * "access" (default): /auth/login/<c> is guarded by Cloudflare Access and needs its JWT.
    * "clickthrough": no login at all. Opening /auth/login/<c> is the user's agreement
    * (a content advisory); it sets the session cookie straight away.
+   * "login": a form asking for `demoUser` / `demoPassword`, opened by the viewer in a popup
+   * (profile "active"). "external": the same form, but the user opens it first, in an ordinary
+   * tab; the viewer opens nothing and only asks the token service (profile "external").
    */
-  mode?: "access" | "clickthrough";
+  mode?: "access" | "clickthrough" | "login" | "external";
+  /**
+   * Credentials of the "login" and "external" modes. They are DELIBERATELY PUBLIC: the demo
+   * page shows them, so the flow can be tried. Never put a real secret here. Both are
+   * required; without them the login page fails closed.
+   */
+  demoUser?: string;
+  demoPassword?: string;
   /** AUD tag of the Cloudflare Access application guarding /auth/login/<c>. Unused for "clickthrough". */
   aud?: string;
   /** Origins of the IIIF clients allowed to use the token service. */

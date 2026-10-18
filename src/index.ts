@@ -35,7 +35,7 @@ async function route(request: Request, env: Env): Promise<Response> {
 
   const [, area, second, third] = segs;
 
-  if (area === "auth" && segs.length === 4 && method === "GET") {
+  if (area === "auth" && segs.length === 4 && (method === "GET" || (method === "POST" && second === "login"))) {
     const c = decodeSeg(third);
     const cfg = c !== null && Object.hasOwn(collections, c) ? collections[c] : null;
     if (!c || !cfg) return notFound();
@@ -67,7 +67,7 @@ async function route(request: Request, env: Env): Promise<Response> {
 
   if (url.pathname === "/" && method === "GET") {
     const demos = parseDemos(env);
-    if (demos.length) return homePage(url.origin, demos);
+    if (demos.length) return homePage(url.origin, demos, collections);
   }
 
   if (area === "files" && segs.length >= 4 && (method === "GET" || method === "HEAD" || method === "OPTIONS")) {

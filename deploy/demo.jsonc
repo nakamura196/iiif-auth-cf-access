@@ -2,8 +2,10 @@
   // Showcase deployment: the IIIF Auth 2.0 demo site (https://iiif-auth-demo.ldas.jp)
   // and the Kasane samples (https://kasane.ldas.jp). iiif-demo-models.ldas.jp is the
   // old host name, kept while hongo-campus-iiif's ueno.json still points to it.
-  // Collections here use "clickthrough": no login, the user only agrees to a notice
-  // (a content advisory, like Wellcome Collection's). The files are not secret.
+  // Most collections here use "clickthrough": no login, the user only agrees to a notice
+  // (a content advisory, like Wellcome Collection's). "login" and "external" use a form
+  // with a public demo ID and password, to show a login without a real account.
+  // The files are not secret.
   // Build the files with scripts/build-demo-assets.zsh, deploy with scripts/deploy.zsh.
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "iiif-demo-models",
@@ -59,6 +61,26 @@
           "en": ["The same pattern for a 3D model. Before agreeing, the viewer shows a lighter point cloud (1.7 MB, the probe's substitute). Agreeing loads the full one (17 MB) through a signed URL (the probe answers 302 with a location). Needs a viewer that shows IIIF 3D (Presentation 4 Scenes), such as Kasane."],
           "ja": ["同じ型を 3D モデルで。同意する前は軽い点群（1.7 MB、probe の substitute）が見えます。同意すると、高精細の点群（17 MB）を署名付き URL で読みます（probe が 302 と location を返す）。IIIF の 3D（Presentation 4 の Scene）を表示できるビューア（Kasane など）で開いてください。"]
         }
+      },
+      {
+        "type": "login",
+        "collection": "login",
+        "image": "hyakki20",
+        "title": { "en": ["Log in with an ID and password"], "ja": ["ID とパスワードでログインする"] },
+        "description": {
+          "en": ["The viewer opens a login window (an active access service). Enter the demo ID and password shown on this page and the image opens."],
+          "ja": ["ビューアがログインの窓を開きます（active の access service）。このページに書いてある見本の ID とパスワードを入れると、画像が見えます。"]
+        }
+      },
+      {
+        "type": "external",
+        "collection": "external",
+        "image": "hyakki23",
+        "title": { "en": ["Log in first, outside the viewer"], "ja": ["ビューアの外で先にログインする"] },
+        "description": {
+          "en": ["The viewer opens no window; it only asks the token service (an external access service). So log in at the link first, then open the viewer. If you are not logged in, the viewer just shows that access is denied. The viewer must be able to send the cookie to this server from its page: Kasane (same site, ldas.jp) works; clients on another site depend on the browser's third-party cookie settings."],
+          "ja": ["ビューアは窓を開かず、token service に問い合わせるだけです（external の access service）。先にリンクからログインしてから、ビューアで開いてください。ログインしていないと、ビューアには「アクセスできません」と出るだけです。ビューアの画面からこのサーバへ Cookie を送れる必要があります。Kasane（同じサイト ldas.jp）なら動きます。別のサイトのクライアントは、ブラウザのサードパーティ Cookie の設定しだいです。"]
+        }
       }
     ],
     "COLLECTIONS": {
@@ -101,6 +123,34 @@
         "confirmLabel": { "en": ["Agree and view"], "ja": ["同意して表示"] },
         "logoutLabel": { "en": ["Withdraw agreement"], "ja": ["同意を取り消す"] },
         "substituteLabel": { "en": ["Points (light)"], "ja": ["点群（軽量）"] },
+        "cookieMaxAge": 3600
+      },
+      "login": {
+        "mode": "login",
+        "allowedOrigins": ["https://kasane.ldas.jp", "https://tomcrane.github.io", "http://localhost:3838"],
+        "label": { "en": ["Log in to view"], "ja": ["ログインして見る"] },
+        "heading": { "en": ["Log in"], "ja": ["ログイン"] },
+        "note": {
+          "en": ["This image is in the public domain. The ID and password are public and are only here to show how the IIIF Authorization Flow works. Please credit the National Diet Library Digital Collections when you use it."],
+          "ja": ["この画像はパブリックドメインです。ID とパスワードは公開していて、IIIF の認証の動きをお見せするためだけに使っています。使うときは、出典（国立国会図書館デジタルコレクション）を示してください。"]
+        },
+        "logoutLabel": { "en": ["Log out"], "ja": ["ログアウト"] },
+        "demoUser": "demo",
+        "demoPassword": "iiif-auth-demo",
+        "cookieMaxAge": 3600
+      },
+      "external": {
+        "mode": "external",
+        "allowedOrigins": ["https://kasane.ldas.jp", "https://tomcrane.github.io", "http://localhost:3838"],
+        "label": { "en": ["Log in first, then open the viewer"], "ja": ["先にログインしてから開く"] },
+        "heading": { "en": ["Log in first"], "ja": ["先にログインしてください"] },
+        "note": {
+          "en": ["This image is in the public domain. The ID and password are public and are only here to show how the IIIF Authorization Flow works. Please credit the National Diet Library Digital Collections when you use it. Log in at the link on the demo page, then open the viewer."],
+          "ja": ["この画像はパブリックドメインです。ID とパスワードは公開していて、IIIF の認証の動きをお見せするためだけに使っています。使うときは、出典（国立国会図書館デジタルコレクション）を示してください。デモのページのリンクでログインしてから、ビューアを開いてください。"]
+        },
+        "logoutLabel": { "en": ["Log out"], "ja": ["ログアウト"] },
+        "demoUser": "demo",
+        "demoPassword": "iiif-auth-demo",
         "cookieMaxAge": 3600
       },
       "ueno": {

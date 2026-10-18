@@ -17,6 +17,32 @@ export function encodePath(path: string): string {
 export function serviceBlock(base: string, collection: string, path: string, config: CollectionConfig) {
   const root = base.replace(/\/+$/, "");
   const c = encodeURIComponent(collection);
+  const nested = [
+    { id: `${root}/auth/token/${c}`, type: "AuthAccessTokenService2" },
+    {
+      id: `${root}/auth/logout/${c}`,
+      type: "AuthLogoutService2",
+      label: config.logoutLabel ?? DEFAULT_LOGOUT_LABEL,
+    },
+  ];
+  if (config.mode === "external") {
+    // Auth 2.0 "external": the client opens nothing and goes straight to the token service,
+    // so the access service has no id and no confirm button.
+    return {
+      id: `${root}/probe/${c}/${encodePath(path)}`,
+      type: "AuthProbeService2",
+      service: [
+        {
+          type: "AuthAccessService2",
+          profile: "external",
+          label: config.label,
+          heading: config.heading,
+          note: config.note,
+          service: nested,
+        },
+      ],
+    };
+  }
   return {
     id: `${root}/probe/${c}/${encodePath(path)}`,
     type: "AuthProbeService2",
@@ -29,14 +55,7 @@ export function serviceBlock(base: string, collection: string, path: string, con
         heading: config.heading,
         note: config.note,
         confirmLabel: config.confirmLabel,
-        service: [
-          { id: `${root}/auth/token/${c}`, type: "AuthAccessTokenService2" },
-          {
-            id: `${root}/auth/logout/${c}`,
-            type: "AuthLogoutService2",
-            label: config.logoutLabel ?? DEFAULT_LOGOUT_LABEL,
-          },
-        ],
+        service: nested,
       },
     ],
   };

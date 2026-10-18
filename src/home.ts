@@ -1,5 +1,5 @@
 import { escapeHtml, htmlPage } from "./html.ts";
-import type { Demo, Env } from "./types.ts";
+import type { CollectionConfig, Demo, Env } from "./types.ts";
 
 /*
  * The showcase's top page: one entry per demo (env.DEMOS), each with its
@@ -36,11 +36,21 @@ export function parseDemos(env: Env): Demo[] {
 
 const t = (m: Record<string, string[]>, lang: string) => (m[lang] ?? Object.values(m)[0] ?? []).join(" ");
 
-export function homePage(origin: string, demos: Demo[]): Response {
+export function homePage(origin: string, demos: Demo[], collections: Record<string, CollectionConfig> = {}): Response {
   const items = demos
     .map((d) => {
       const c = encodeURIComponent(d.collection);
       const manifest = `${origin}/manifest/${c}/${encodeURIComponent(d.image ?? d.model ?? "")}.json`;
+      const cfg = Object.hasOwn(collections, d.collection) ? collections[d.collection] : undefined;
+      const formMode = cfg?.mode === "login" || cfg?.mode === "external";
+      const creds =
+        formMode && cfg?.demoUser && cfg?.demoPassword
+          ? `<p>Demo account (public) / 見本のアカウント（公開）: ID <code>${escapeHtml(cfg.demoUser)}</code> / Password <code>${escapeHtml(cfg.demoPassword)}</code></p>`
+          : "";
+      const first =
+        cfg?.mode === "external"
+          ? `<p><strong>1. <a href="${escapeHtml(`${origin}/auth/login/${c}`)}">Log in here first / まずここでログイン</a></strong></p><p><strong>2. Open in a viewer / ビューアで開く</strong></p>`
+          : "";
       const clients = CLIENTS.filter((k) => d.image !== undefined || k.models)
         .map(
         (k) =>
@@ -49,6 +59,8 @@ export function homePage(origin: string, demos: Demo[]): Response {
       return (
         `<h2><span class="type">${escapeHtml(d.type)}</span>${escapeHtml(t(d.title, "en"))} / ${escapeHtml(t(d.title, "ja"))}</h2>` +
         `<p>${escapeHtml(t(d.description, "en"))}<br>${escapeHtml(t(d.description, "ja"))}</p>` +
+        creds +
+        first +
         `<p>Manifest: <a href="${escapeHtml(manifest)}"><code>${escapeHtml(manifest)}</code></a></p>` +
         `<ul>${clients}</ul>` +
         `<p><small><a href="${origin}/auth/logout/${c}">Reset / やり直す</a> (clears this demo's cookie)</small></p>`
